@@ -1,0 +1,977 @@
+---
+title: "imputation"
+author: "Lucy Grigoroff"
+date: "2023-08-28"
+output: html_document
+---
+
+#Complete cases dataset
+control is defined by animal numers 1-10 (dose group 1) or timepoint 0 
+low dose is animal numbers 11-20 (dose group 2) and not timepoint 0 
+high dose is animal numers 21-30 (dose group 3) and timepoint not 0
+```{r cars}
+ library(missForest)
+ library(randomForest)
+ library(missMethods)
+ library(lpSolve)
+# devtools::install_github("strengejacke/sjmisc")
+ library(sjmisc)
+ library(tidyverse)
+
+load("/Users/lucygrigoroff/Downloads/new_clinchem_2SD_removed_edited.rda")
+df <- new_clinchem
+
+#set up doseFlag column with control, low, high
+
+df <- df %>% mutate(doseFlag =
+                     case_when((Dose_group == 1 | Timepoint == 0) ~ "Control", 
+                               (Dose_group == 2 & Timepoint != 0) ~ "low",
+                              (Dose_group == 3 & Timepoint != 0) ~ "high")
+)
+
+
+#serum data frame
+#SERUM only has 3 timepoints, 24, 48 and 168
+Sdf<- df[,c(1:5,10:13,20:30,32,33)]
+idx <- which(Sdf$Timepoint == 24 | df$Timepoint == 48 |df$Timepoint == 168)  
+Sdf <- Sdf[idx,]
+#complete cases
+idx<- which(rowSums(is.na(Sdf[10:20])) > 0)
+SCdf<-Sdf[-idx,]
+
+SCdf <-SCdf%>%relocate("doseFlag", .before = "S_Creatinine" ) %>% relocate("S_Comments", .before = "S_Creatinine")
+# #URINE data frame
+# Udf<-df[,c(1:5,10:18,31,33)]
+# #complete cases
+# idx<- which(rowSums(is.na(Udf[11:14])) > 0)
+# UCdf<-Udf[-idx,]
+# 
+# #NA summary
+# #SERUM
+# colSums(is.na(Sdf))
+# as.data.frame(sapply(Sdf[10:20], function(x) sum(is.na(x))/8460*100))
+# 
+# #URINE
+# colSums(is.na(Udf))
+# as.data.frame(sapply(Udf[11:14], function(x) sum(is.na(x))/25350*100))
+```
+
+#choose data size 
+full, 500 or 10
+```{r}
+
+```
+#choose columns for imputation input
+```{r}
+impcols<-c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
+ #x <- SCdf[,tt]
+
+#to not create missinginess in the following
+miscols <- c(1:11)
+
+#column to begin creating missingness
+start <- which(colnames(SCdf) == "S_Creatinine")
+#or start<-12
+end<-ncol(SCdf)
+
+# firstcol = which(colnames(x)=="a")
+# lastcol = which(colnames(x)=="b")
+# 
+# mydf[c(firstcol:lastcol)]
+# c(start:end)
+```
+
+#set up percentages of missingness
+```{r}
+p <- (cbind(0.05, 0.1, 0.2, 0.3, 0.4))
+```
+
+#list of colnames for MCAR missingess
+```{r}
+MCARcols <- c("S_Creatinine", "S_Urea_nitrogen", "S_ALT", "S_AST", "S_Glucose","S_Sodium", "S_Potassium", "S_Calcium", "S_Phosphorus", "S_Albumin", "S_Total_protein")
+```
+dose groups, anything that’s in the control group (animal no. 1-10 or timepoint 0 = 1, animal no 11-20 and not timepoint 0 =2, animal no 20-30 and not timepoint 0=3)
+
+control <- df%>%filter(Dose_group == 1 | Timepoint == 0)
+low_dose <- df%>%filter(Dose_group == 2 & Timepoint != 0, )
+high_dose <- df%>%filter(Dose_group == 3 & Timepoint != 0, )
+
+MAR
+Company and comments "IS=insufficient volume", "IS=Insufficient sample" "No internal code;  IS=Insufficient sample" "No internal code;  IS=Insufficient sample; NC=Not calculated"   
+
+missForest: control+low+high: clinchem_params + doseFlag + animal_no + timepoint + sacrifice + company
+[1] "Company"   "Sacrifice_subgroup"    "Toxin"   "Animal_no."     "Dose_group"       "Timepoint"    
+
+#MISSINGNESS
+Using complete cases for serum, create missingness at varying percentages (5, 10, 20, 30 40)
+```{r}
+#SCdf <-SCdf%>%relocate("doseFlag", .before = "S_Creatinine" ) %>% relocate("S_Comments", .before = "S_Creatinine")
+#p <- (cbind(0.05, 0.1, 0.2, 0.3, 0.4))
+
+#MAR
+MAR <- list()
+for (j in (p)) {
+  placeHolder <- paste0("missing ", j * 100, " %")
+  
+  mSdf <- list()
+  test <- SCdf[, miscols]
+  for (i in start:ncol(SCdf)) {
+    #missingness
+    mSdf[[i]] <-
+      missMethods::delete_MAR_1_to_x(ds = SCdf,
+                                      p = j,
+                                      cols_mis = c(i),
+                                      cols_ctrl = c("Company"),
+                                      x = 3)
+    test[, i] <- (mSdf[[i]][[i]])
+  }
+  new_list <- setNames(list(test), placeHolder)
+  MAR <- append(MAR, new_list)
+}
+
+#MNAR
+MNAR <- list()
+for (j in (p)) {
+  placeHolder <- paste0("missing ", j * 100, " %")
+  
+  mSdf <- list()
+  test <- SCdf[, miscols]
+  for (i in start:ncol(SCdf)) {
+    #missingness
+    mSdf[[i]] <-
+      missMethods::delete_MNAR_1_to_x(ds = SCdf,
+                                      p = j,
+                                      cols_mis = c(i),
+                                      x = 3)
+    test[, i] <- (mSdf[[i]][[i]])
+  }
+  new_list <- setNames(list(test), placeHolder)
+  MNAR <- append(MNAR, new_list)
+}
+
+#MCAR
+MCAR<-list()  
+for(j in p){
+  placeHolder <- paste0("missing ", j * 100, " %")
+  mSdf <-list()
+     #missingness
+  mSdf[[i]] <- missMethods::delete_MCAR(ds = SCdf, p = j, MCARcols)
+  new_list <- setNames(list(mSdf[[i]]), placeHolder)
+  MCAR <- append(MCAR, new_list)
+
+}
+
+rm(mSdf, new_list, test, new_clinchem,Sdf, df)
+```
+
+#choose missingess method
+
+Need to change the way the eg CALIBER_MAR list is set up. Use paste 
+```{r}
+t<- MAR
+full<-SCdf[,start:end]
+```
+
+
+#IMPUTATION
+##CALIBERrfimpute
+###CALIBERrfimpute without clinchem
+
+CALIBERrfimpute does not handle NAs in the variables it uses to impute. So while clinchem_params + doseFlag + animal_no + timepoint + sacrifice + company was used for missForest, clinchem_params cannot be included in the CALIBERrfimputation. This is because the final imputation will be applied to data with real NAs in the clinchem_params. doseFlag + animal_no + timepoint + sacrifice + company do not have NAs. 
+
+CALIBERrfimpute also does not handle categorical variables as input for imputation. 
+
+Repeat the below process for MCAR, MAR and MNAR
+```{r}
+#CALIBERrfimpute
+CALIBER<-list()
+FULL<-list()
+PARTIAL<-list()
+
+imputedfull<-list()
+imputedonly<-list()
+#set up variables used in imputations, CALIBERrfimpute wont accept non-numericals
+x<-SCdf[,impcols]
+x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
+
+
+for(j in 1:length(t)){
+  placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
+  placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
+  
+  #identify how many NAs in each collumn
+idy<- length(which(is.na(t[[j]][,c(12)])))
+
+#set up empty matrix of the correct size 
+matrix_empty = matrix(nrow = idy, ncol = (end - start + 1))
+emptyDF = data.frame(matrix_empty)
+imp<- list()
+
+for(i in start:ncol(t[[j]])){
+  #imputation
+  imp[[i]]<-CALIBERrfimpute::mice.impute.rfcont(y = t[[j]][,i], ry = !is.na(t[[j]][,i]), x = as.matrix(x))
+  emptyDF[,i] <- imp[[i]]
+}
+
+#locate where NA's were created
+idx<-as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
+
+#create full data frame containing the imputed values and partial data frame that has the original value and the imputed value side by side
+imputedfull[[j]]<-t[[j]][,start:end]
+idx$imputed<-idx$original<-NA
+for(i in 1:nrow(idx)){
+  idx$original[i]<-full[idx$row[i],idx$col[i]]
+  idx$imputed<-unlist(imp[start:end])
+  imputedonly[[j]]<-idx
+  imputedfull[[j]][idx$row[i],idx$col[i]]<-as.numeric(idx$imputed[i])
+}
+
+new_list <- setNames(list(imputedfull[[j]]), placeHolder)
+FULL <- append(FULL, new_list)  
+
+new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
+PARTIAL <- append(PARTIAL, new_list2) 
+
+}
+  
+  CALIBER<- append(CALIBER, list(PARTIAL = PARTIAL,
+                                 FULL = FULL))
+
+#NRMSE + fullMAE
+nrmse <-list()
+fullmae<-list()
+NRMSE<-list()
+fullMAE<-list()
+for(j in 1:length(CALIBER[["FULL"]])){
+  
+placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+
+xi<- as.matrix(CALIBER[["FULL"]][[j]])
+xt<-as.matrix(SCdf[,start:end])
+xm<-as.matrix(t[[j]][,start:end]) 
+  
+nrmse[[j]]<-missForest::nrmse(ximp = xi, xmis = xm, xtrue = xt)
+
+new_list <- setNames((nrmse[j]), placeHolder3)
+NRMSE <- append(NRMSE, new_list) 
+
+fullmae[j] <- mean(abs(xt - xi))
+
+new_list2 <- setNames((fullmae[j]), placeHolder3)
+fullMAE <- append(fullMAE, new_list2) 
+
+}
+ 
+#partialMAE
+ partialmae <- list()  
+ partialMAE<-list()
+  for(j in 1:length(CALIBER[["PARTIAL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+    
+  xt <- CALIBER[["PARTIAL"]][[j]][["original"]]
+  xi <- CALIBER[["PARTIAL"]][[j]][["imputed"]]
+  
+  partialmae[j] <- mean(abs(xt - xi))
+  
+  new_list <- setNames((partialmae[j]), placeHolder3)
+  partialMAE <- append(partialMAE, new_list) 
+  }
+ 
+CALIBER<- append(CALIBER, list(NRMSE = NRMSE,
+                               partialMAE = partialMAE,
+                               fullMAE = fullMAE))  
+  
+  
+if((MCAR[1] %in% t[1]) ){
+  CALIBER_MCAR <-CALIBER
+}
+
+if((MAR[1] %in% t[1]) ){
+  CALIBER_MAR <-CALIBER
+}
+
+if((MNAR[1] %in% t[1]) ){
+ CALIBER_MNAR <-CALIBER
+}
+  #CALIBER <- append(CALIBER$FULL, list(FULL = FULL))
+
+# nrmse(ximp=as.matrix(imputedfull[[3]]), xmis=as.matrix(MAR[["missing 20 %"]][,12:22]), xtrue=as.matrix(SCdf[,12:22]))
+# mae_MAR <- mean(abs(imputedonly[[1]][["original"]] - imputedonly[[1]][["imputed"]]))
+
+```
+
+
+##MICE
+###MICE with clinchem
+Repeat the below process for MCAR, MAR and MNAR
+```{r}
+
+#full<-SCdf[,12:22]
+test<-list()
+imp<-list()
+imp2<-list()
+imputedonly<-list()
+MICErf<-list()
+FULL<-list()
+PARTIAL<-list()
+for(j in 1:length(t)){
+  placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
+  placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
+  
+  #make predictors numeric
+  x<-SCdf[,impcols]
+ x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+ x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
+ 
+#make the predictor matrix using all covariates (including clin_chem parameters)
+x<-cbind(x,t[[j]][,start:end])
+init = mice(x, maxit=0) 
+predM = init$predictorMatrix
+
+#Do imputation
+imp[[j]]<-mice(data = x, method="rf", predictorMatrix = predM)
+imp2[[j]]<-merge_imputations(dat = x, imp = imp[[j]])
+idx<- as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
+idx$imputed<-idx$original<-NA
+
+for(i in 1:nrow(idx)){
+  idx$original[i]<-full[idx$row[i],idx$col[i]]
+  idx$imputed[i]<-imp2[[j]][idx$row[i],idx$col[i]]
+  imputedonly[[j]]<-idx
+}
+
+new_list <- setNames(list(imp2[[j]]), placeHolder)
+FULL <- append(FULL, new_list)  
+
+new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
+PARTIAL <- append(PARTIAL, new_list2) 
+}
+
+MICErf<- append(MICErf, list(PARTIAL = PARTIAL,
+                             FULL = FULL))
+
+#NRMSE + fullMAE
+nrmse <-list()
+fullmae<-list()
+NRMSE<-list()
+fullMAE<-list()
+for(j in 1:length(MICErf[["FULL"]])){
+  
+placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+
+xi<- as.matrix(MICErf[["FULL"]][[j]])
+xt<-as.matrix(SCdf[,start:end])
+xm<-as.matrix(t[[j]][,start:end]) 
+  
+nrmse[[j]]<-missForest::nrmse(ximp = xi, xmis = xm, xtrue = xt)
+
+new_list <- setNames((nrmse[j]), placeHolder3)
+NRMSE <- append(NRMSE, new_list) 
+
+fullmae[j] <- mean(abs(xt - xi))
+
+new_list2 <- setNames((fullmae[j]), placeHolder3)
+fullMAE <- append(fullMAE, new_list2) 
+
+}
+ 
+#partialMAE
+ partialmae <- list()  
+ partialMAE<-list()
+  for(j in 1:length(MICErf[["PARTIAL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+    
+  xt <- MICErf[["PARTIAL"]][[j]][["original"]]
+  xi <- MICErf[["PARTIAL"]][[j]][["imputed"]]
+  
+  partialmae[j] <- mean(abs(xt - xi))
+  
+  new_list <- setNames((partialmae[j]), placeHolder3)
+  partialMAE <- append(partialMAE, new_list) 
+  }
+ 
+MICErf<- append(MICErf, list(NRMSE = NRMSE,
+                             partialMAE = partialMAE,
+                             fullMAE = fullMAE))
+
+
+ if((MCAR[1] %in% t[1]) ){
+  MICErf_MCAR <-MICErf
+}
+
+if((MAR[1] %in% t[1]) ){
+  MICErf_MAR <-MICErf
+}
+
+if((MNAR[1] %in% t[1]) ){
+  MICErf_MNAR <-MICErf
+}
+
+```
+
+###MICE without clinchem
+Repeat the below process for MCAR, MAR and MNAR
+```{r}
+
+#full<-SCdf[,12:22]
+test<-list()
+imp<-list()
+imp2<-list()
+imputedonly<-list()
+ncMICErf<-list()
+FULL<-list()
+PARTIAL<-list()
+for(j in 1:length(t)){
+  placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
+  placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
+  
+  #make predictors numeric
+x<-SCdf[,impcols]
+  # x<-SCdf %>% 
+  # select("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
+ x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+ x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
+ 
+#make the predictor matrix using all covariates (including clin_chem parameters)
+x<-cbind(x,t[[j]][,start:end])
+init = mice(x, maxit=0) 
+predM = init$predictorMatrix
+
+#Do imputation
+imp[[j]]<-mice(data = x, method="rf", predictorMatrix = predM)
+imp2[[j]]<-merge_imputations(dat = x, imp = imp[[j]])
+idx<- as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
+idx$imputed<-idx$original<-NA
+
+for(i in 1:nrow(idx)){
+  idx$original[i]<-full[idx$row[i],idx$col[i]]
+  idx$imputed[i]<-imp2[[j]][idx$row[i],idx$col[i]]
+  imputedonly[[j]]<-idx
+}
+
+new_list <- setNames(list(imp2[[j]]), placeHolder)
+FULL <- append(FULL, new_list)  
+
+new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
+PARTIAL <- append(PARTIAL, new_list2) 
+}
+
+ncMICErf<- append(ncMICErf, list(PARTIAL = PARTIAL,
+                                    FULL = FULL))
+
+#NRMSE + fullMAE
+nrmse <-list()
+fullmae<-list()
+NRMSE<-list()
+fullMAE<-list()
+for(j in 1:length(ncMICErf[["FULL"]])){
+  
+placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+
+xi<- as.matrix(ncMICErf[["FULL"]][[j]])
+xt<-as.matrix(SCdf[,start:end])
+xm<-as.matrix(t[[j]][,start:end]) 
+  
+nrmse[[j]]<-missForest::nrmse(ximp = xi, xmis = xm, xtrue = xt)
+
+new_list <- setNames((nrmse[j]), placeHolder3)
+NRMSE <- append(NRMSE, new_list) 
+
+fullmae[j] <- mean(abs(xt - xi))
+
+new_list2 <- setNames((fullmae[j]), placeHolder3)
+fullMAE <- append(fullMAE, new_list2) 
+
+}
+ 
+#partialMAE
+ partialmae <- list()  
+ partialMAE<-list()
+  for(j in 1:length(ncMICErf[["PARTIAL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+    
+  xt <- ncMICErf[["PARTIAL"]][[j]][["original"]]
+  xi <- ncMICErf[["PARTIAL"]][[j]][["imputed"]]
+  
+  partialmae[j] <- mean(abs(xt - xi))
+  
+  new_list <- setNames((partialmae[j]), placeHolder3)
+  partialMAE <- append(partialMAE, new_list) 
+  }
+ 
+ncMICErf<- append(ncMICErf, list(NRMSE = NRMSE,
+                                 partialMAE = partialMAE,
+                                 fullMAE = fullMAE))
+
+
+
+ if((MCAR[1] %in% t[1]) ){
+  ncMICErf_MCAR <-ncMICErf
+}
+
+if((MAR[1] %in% t[1]) ){
+  ncMICErf_MAR <-ncMICErf
+}
+
+if((MNAR[1] %in% t[1]) ){
+  ncMICErf_MNAR <-ncMICErf
+}
+
+
+```
+clinchem_params + doseFlag + animal_no + timepoint + sacrifice + company
+##missForest
+###missForest with ClinChem
+```{r}
+
+FULL<-list()
+PARTIAL <- list()
+missForest<-list()
+imp <- list()
+imputedonly<-list()
+nrmse<-list()
+NRMSE<-list()
+for(j in 1:length(t)){
+  placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
+  placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
+  placeHolder3<- paste0("NRMSE ", p[j] * 100, " % missing")
+  
+  #make predictors factors (can also be numeric, just not characters, max of 53 categories per variable allowed)
+  x<-SCdf[,impcols]
+ x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+ 
+ #set up data frame used in imputation 
+ x <- cbind(x,t[[j]][,start:end])
+ 
+ #impute
+ imp[[j]] <- missForest(xmis = x, ntree = 10, variablewise = F)
+ 
+ #locate where in the complete data the NAs were created
+idx<- as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
+
+#make empty list to fill with original and imputed
+idx$imputed<-idx$original<-NA
+
+#start and end criteria 
+start2 <- ncol(SCdf[,impcols]) +1
+end2 <- ncol(x)
+
+for(i in 1:nrow(idx)){
+  
+  #fill original column
+  idx$original[i]<-full[idx$row[i],idx$col[i]]
+  #fill imputed column
+  idx$imputed[i]<-imp[[j]][["ximp"]][,start2:end2][idx$row[i],idx$col[i]]
+  #store imputed only for each percentage of missingness
+  imputedonly[[j]]<-idx
+}
+
+new_list <- setNames(list(imp[[j]][["ximp"]][,start2:end2]), placeHolder)
+FULL <- append(FULL, new_list)  
+
+ new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
+ PARTIAL <- append(PARTIAL, new_list2) 
+
+#extract NRMSE for each df 
+nrmse[[j]]<-imp[[j]][["OOBerror"]][["NRMSE"]]
+  new_list3 <- setNames(nrmse[[j]], placeHolder3)
+ NRMSE <- append(NRMSE, new_list3) 
+
+}
+
+missForest<- append(missForest, list(PARTIAL = PARTIAL,
+                                     FULL = FULL,
+                                     NRMSE = NRMSE))
+
+#fullMAE
+
+fullmae<-list()
+fullMAE<-list()
+for(j in 1:length(missForest[["FULL"]])){
+  
+placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+
+xi<- as.matrix(missForest[["FULL"]][[j]])
+xt<-as.matrix(SCdf[,start:end])
+xm<-as.matrix(t[[j]][,start:end]) 
+
+fullmae[j] <- mean(abs(xt - xi))
+
+new_list2 <- setNames((fullmae[j]), placeHolder3)
+fullMAE <- append(fullMAE, new_list2) 
+
+}
+ 
+#partialMAE
+ partialmae <- list()  
+ partialMAE<-list()
+  for(j in 1:length(missForest[["PARTIAL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+    
+  xt <- missForest[["PARTIAL"]][[j]][["original"]]
+  xi <- missForest[["PARTIAL"]][[j]][["imputed"]]
+  
+  partialmae[j] <- mean(abs(xt - xi))
+  
+  new_list <- setNames((partialmae[j]), placeHolder3)
+  partialMAE <- append(partialMAE, new_list) 
+  }
+ 
+missForest<- append(missForest, list(partialMAE = partialMAE,
+                                     fullMAE = fullMAE))  
+
+#nameing
+
+ if((MCAR[1] %in% t[1]) ){
+  missForest_MCAR <-missForest
+}
+
+if((MAR[1] %in% t[1]) ){
+  missForest_MAR <-missForest
+}
+
+if((MNAR[1] %in% t[1]) ){
+  missForest_MNAR <-missForest
+}
+
+```
+###missForest without ClinChem
+```{r}
+
+#missForest no clinchem
+ncmissForest<-list()
+
+FULL<-list()
+PARTIAL<-list()
+NRMSE<- list()
+imputedfull<-list()
+imputedonly<-list()
+#full<-SCdf[,12:22]
+NRMSEncmissForest<-list()
+
+for(j in 1:length(t)){
+  placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
+  placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
+  
+  #identify how many NAs in each collumn
+idy<- length((t[[1]][,start]))
+
+#set up empty matrix of the correct size 
+matrix_empty = matrix(nrow = idy, ncol = 11)
+emptyDF = data.frame(matrix_empty)
+imp<- list()
+
+for(i in start:ncol(t[[j]])){
+  x<-SCdf[,impcols] 
+  
+  start2 <- ncol(SCdf[,impcols]) +1
+ x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+ #x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
+ 
+ x <- cbind(x,t[[j]][,i])
+  
+  #imputation, makes full data frame, but imputation done without clinchem
+  imp[[i]] <- missForest(xmis = x, ntree = 10, variablewise = F)
+  emptyDF[,i] <- imp[[i]][["ximp"]][[start2]]
+  imputedfull[[j]]<- emptyDF
+}
+
+#locate where NA's were created
+idx<-as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
+
+#create full data frame containing the imputed values and partial data frame that has the original value and the imputed value side by side
+
+idx$imputed<-idx$original<-NA
+for(i in 1:nrow(idx)){
+  idx$original[i]<-full[idx$row[i],idx$col[i]]
+  idx$imputed[i]<-imputedfull[[j]][,start:end][idx$row[i],idx$col[i]]
+  imputedonly[[j]]<-idx
+}
+new_list <- setNames(list(imputedfull[[j]][,start:end]), placeHolder)
+FULL <- append(FULL, new_list)  
+
+new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
+PARTIAL <- append(PARTIAL, new_list2) 
+
+}
+  
+ ncmissForest<- append(ncmissForest, list(PARTIAL = PARTIAL,
+                                          FULL = FULL))
+ 
+#NRMSE + fullMAE
+nrmse <-list()
+fullmae<-list()
+NRMSE<-list()
+fullMAE<-list()
+for(j in 1:length(ncmissForest[["FULL"]])){
+  
+placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+
+xi<- as.matrix(ncmissForest[["FULL"]][[j]])
+xt<-as.matrix(SCdf[,start:end])
+xm<-as.matrix(t[[j]][,start:end]) 
+  
+nrmse[[j]]<-missForest::nrmse(ximp = xi, xmis = xm, xtrue = xt)
+
+new_list <- setNames((nrmse[j]), placeHolder3)
+NRMSE <- append(NRMSE, new_list) 
+
+fullmae[j] <- mean(abs(xt - xi))
+
+new_list2 <- setNames((fullmae[j]), placeHolder3)
+fullMAE <- append(fullMAE, new_list2) 
+
+}
+ 
+#partialMAE
+ partialmae <- list()  
+ partialMAE<-list()
+  for(j in 1:length(ncmissForest[["PARTIAL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+    
+  xt <- ncmissForest[["PARTIAL"]][[j]][["original"]]
+  xi <- ncmissForest[["PARTIAL"]][[j]][["imputed"]]
+  
+  partialmae[j] <- mean(abs(xt - xi))
+  
+  new_list <- setNames((partialmae[j]), placeHolder3)
+  partialMAE <- append(partialMAE, new_list) 
+  }
+ 
+ncmissForest<- append(ncmissForest, list(NRMSE = NRMSE,
+                                         partialMAE = partialMAE,
+                                         fullMAE = fullMAE))  
+ 
+ if((MCAR[1] %in% t[1]) ){
+  ncmissForest_MCAR <-ncmissForest
+}
+
+if((MAR[1] %in% t[1]) ){
+  ncmissForest_MAR <-ncmissForest
+}
+
+if((MNAR[1] %in% t[1]) ){
+  ncmissForest_MNAR <-ncmissForest
+}
+
+```
+
+
+#METRICS
+```{r}
+# MICErf[["NRMSE"]]
+# missForest[["NRMSE"]]
+# ncMICErf[["NRMSE"]]
+# ncmissForest[["NRMSE"]]
+df<- as.data.frame(rbind(CALIBER[["NRMSE"]], 
+                         ncMICErf[["NRMSE"]],
+                         ncmissForest[["NRMSE"]],
+                         MICErf[["NRMSE"]],
+                         missForest[["NRMSE"]]))
+rownames(df) <- c("ncCALIBERrfimoute","ncMICErf","ncmissForest", "MICErf", "missForest")
+
+ggplot(data= df, aes(x= ))
+
+```
+
+
+
+#metrics practice
+###NRMSE
+```{r}
+nrmse <-list()
+mae<-list()
+NRMSE<-list()
+for(j in 1:length(ncmissForest_MAR[["FULL"]])){
+  
+placeHolder3 <- paste0("NRMSE ", p[,j] * 100, " % missing")  
+
+xi<- as.matrix(ncmissForest_MAR[["FULL"]][[j]])
+xt<-as.matrix(SCdf[,start:end])
+xm<-as.matrix(MAR[[j]][,start:end]) 
+  
+nrmse[[j]]<-missForest::nrmse(ximp = xi,xmis = xm, xtrue = xt)
+mae[[j]] <- mean(abs(xt - xi))
+
+new_list <- setNames(list(nrmse[j]), placeHolder3)
+NRMSE <- append(NRMSE, new_list) 
+}
+
+
+```
+
+###MAE
+```{r}
+# mae_MCAR <- mean(abs(orig_MCAR - imp_MCAR))
+#   mae_MAR <- mean(abs(orig_MAR - imp_MAR))
+#   mae_MNAR <- mean(abs(orig_MNAR - imp_MNAR))
+
+mae <- list()  
+  for(j in 1:length(ncmissForest_MAR[["PARTIAL"]])){
+  xt <- ncmissForest_MAR[["PARTIAL"]][[j]][["original"]]
+  xi <- ncmissForest_MAR[["PARTIAL"]][[j]][["imputed"]]
+  
+  mae[[j]] <- mean(abs(xt - xi))
+  }
+
+  
+```
+
+#IMPUTATIONtrials
+#####MICE trial
+```{r}
+#rf MICE
+library(mice)
+
+# mice::mice.impute.rf()
+# merge_imputations(dat = SCdf5, imp = imp)
+
+#still need to convert to numeric 
+x<-SCdf %>% 
+  select("Company", "Toxin", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
+ x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+ x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
+# full<-SCdf[,12:22]
+x<-cbind(x,MAR[[1]][,12:22])
+
+#using all covariates (including clin_chem parameters)
+init = mice(x, maxit=0) 
+predM = init$predictorMatrix
+imp <- mice(data = x, method="rf", predictorMatrix = predM)
+
+#not using clin_chem parameters
+
+predM[6:16,6:16]<-0
+imp <- mice(data = x, method="rf", predictorMatrix = predM)
+
+#merges multiple data frames/picks optinal imputation, returns full dataframe with imputed values
+imp2<-merge_imputations(dat = x, imp = imp)
+
+
+#imp<- mice::mice.impute.rf(y = MNAR[[1]][,12], ry = !is.na(MNAR[[1]][,12]), x = as.matrix(x))
+```
+####CALIBERrfimputeattempt
+
+```{r}
+#CALIBERrfimpute
+
+imp<-list()
+x<-SCdf %>% 
+  select("Company", "Toxin", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
+x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
+
+idx<- length(which(is.na(MAR[["missing 5 %"]][,12])))
+matrix_empty = matrix(nrow = idx, ncol = 11)
+test = data.frame(matrix_empty)
+
+for(i in 12:ncol(MAR[["missing 5 %"]])){
+  #imputation
+  imp[[i]]<-CALIBERrfimpute::mice.impute.rfcont(y = MAR[["missing 5 %"]][,i], ry = !is.na(MAR[["missing 5 %"]][,i]), x = as.matrix(x))
+  test[,i] <- imp[[i]]
+}
+
+
+
+
+
+
+imp<-CALIBERrfimpute::mice.impute.rfcont(y = MAR[["missing 5 %"]][,12], ry = !is.na(MAR[["missing 5 %"]][,12]), x = as.matrix(x))
+matrix_empty = matrix(nrow = idx, ncol = 1)
+test = data.frame(matrix_empty)
+test[,2] <- imp
+
+
+
+CALIBERrfimpute::mice.impute.rfcont(y = MARSdf05$S_Creatinine, ry = !is.na(MARSdf05$S_Creatinine), x = as.matrix(MARSdf05[,1:9]))
+
+mice.impute.rfcont5 <- function(y, ry, x, ...){
+CALIBERrfimpute::mice.impute.rfcont(
+y = y, ry = ry, x = x, ntree_cont = 1)
+}
+
+mice.impute.rfcont5(y = as.numeric(SCdf5$S_Creatinine), ry = !is.na(SCdf5$S_Creatinine), x = SCdf5$Animal_no.)
+
+
+```
+####IMPUTATION CALIBER PRACTICE 
+CALIBERrfimpute also does not handle categorical variables as input for imputation. 
+```{r}
+#CALIBERrfimpute
+
+imp<-list()
+
+#set up variables used in imputations, CALIBERrfimpute wont accept non-numericals
+x<-SCdf %>% 
+  select("Company", "Toxin", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
+x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
+
+#identify how many NAs in each collumn
+idx<- length(which(is.na(MAR[["missing 5 %"]][,12])))
+
+#set up empty matrix of the correct size 
+matrix_empty = matrix(nrow = idx, ncol = 11)
+test = data.frame(matrix_empty)
+
+for(i in 12:ncol(MAR[["missing 5 %"]])){
+  #imputation
+  imp[[i]]<-CALIBERrfimpute::mice.impute.rfcont(y = MAR[["missing 5 %"]][,i], ry = !is.na(MAR[["missing 5 %"]][,i]), x = as.matrix(x))
+  test[,i] <- imp[[i]]
+}
+```
+full df with imputed
+```{r}
+# SCdf[idx$row[1],idx$col[1]]
+# 
+test2[23,1]
+# 29.172
+test2<-MAR[["missing 5 %"]][,12:22]
+for(i in 1:nrow(idx)){
+ test2[idx$row[i],idx$col[i]]<-as.numeric(idx$imputed[i])
+}
+```
+side by side original and imputed
+```{r}
+idx<-as.data.frame(which(is.na(MAR[["missing 5 %"]][,12:22]), arr.ind=TRUE))
+test<-SCdf[,12:22]
+test2<-MAR[["missing 5 %"]][,12:22]
+idx$imputed<-idx$original<-NA
+for(i in 1:nrow(idx)){
+  idx$original[i]<-test[idx$row[i],idx$col[i]]
+  idx$imputed<-unlist(imp[12:22])
+  test2[idx$row[i],idx$col[i]]<-as.numeric(idx$imputed[i])
+  #idx$imputed[i]<-MAR[["missing 5 %"]][idx$row[i],idx$col[i]]
+}
+```
+
+#Density (violin + boxplot)
+#External check
+```{r}
+#find relationship to test bias. Serum Albumin and Total Protein have a strong relationship. 
+#df2 <- df[rowSums(is.na(df[,15:30])) > 0, ]  
+firstcol = which(colnames(SCdf)=="S_Creatinine")
+lastcol = which(colnames(SCdf)=="S_Total_protein")
+
+pairs(SCdf[c(firstcol:lastcol)])
+
+ggplot(data = SCdf, aes(x = S_Total_protein, y = S_Albumin)) +
+  geom_point() +
+   geom_smooth(method = lm,
+               level = 0.95) +
+  stat_poly_eq(data=SCdf, aes(x=S_Total_protein, y = S_Albumin))
+  
+
+ggplot(data = SCdf, aes(x = S_ALT, y = S_AST)) +
+  geom_point() +
+ geom_smooth(method = lm,
+               level = 0.95) +
+  stat_poly_eq(data=SCdf, aes(x=S_ALT, y = S_AST))
+
+
+ggpubr::stat_cor(method = "pearson",
+                   hjust = 0,
+                   vjust = 0) 
+```
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.

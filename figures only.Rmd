@@ -1,0 +1,1084 @@
+---
+title: "Figures imputation"
+author: "Lucy Grigoroff"
+date: "2023-09-14"
+output: html_document
+---
+
+
+```{r cars}
+
+```
+
+#External
+##MAR
+```{r pressure, echo=FALSE}
+plot<-list()
+
+for(i in 1:length(p)){
+my.data.Albumin <- cbind(SCdf$S_Albumin,
+                         CALIBER_MAR[["FULL"]][[i]][["S_Albumin"]],
+                         MICErf_MAR[["FULL"]][[i]][["S_Albumin"]], 
+                         ncMICErf_MAR[["FULL"]][[i]][["S_Albumin"]], 
+                         missForest_MAR[["FULL"]][[i]][["S_Albumin"]],
+                         ncmissForest_MAR[["FULL"]][[i]][["S_Albumin"]])
+
+my.data.TotalProtein <- cbind(SCdf$S_Total_protein,
+                         CALIBER_MAR[["FULL"]][[i]][["S_Total_protein"]],
+                         MICErf_MAR[["FULL"]][[i]][["S_Total_protein"]],
+                         ncMICErf_MAR[["FULL"]][[i]][["S_Total_protein"]], 
+                         missForest_MAR[["FULL"]][[i]][["S_Total_protein"]],
+                         ncmissForest_MAR[["FULL"]][[i]][["S_Total_protein"]])
+
+cn<- c("Original","ncCALIBERrfimpute","MICErf","ncMICErf", "missForest", "ncmissForest")
+colnames(my.data.TotalProtein) <-cn
+colnames(my.data.Albumin) <-cn
+
+my.data.TotalProtein <-melt(my.data.TotalProtein)
+
+my.data.Albumin<-melt(my.data.Albumin)
+
+colnames(my.data.TotalProtein)[2] = "Imputation"
+colnames(my.data.Albumin)[2] = "Imputation"
+
+colnames(my.data.TotalProtein)[3] = "TotalProtein"
+colnames(my.data.Albumin)[3] = "Albumin"
+
+my.data<- cbind(my.data.TotalProtein, my.data.Albumin[,"Albumin"])
+colnames(my.data)[4] = "Albumin"
+
+
+# Fit polynomial regression line and add labels
+formula <- y ~ x
+plot [[i]]<- ggplot(my.data, aes(x=Albumin, y=TotalProtein, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  stat_regline_equation(
+    aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+    formula = formula
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle(paste("MAR Albumin and Total Protein ",p[,i] *100,"% Missing",sep=""))
+}
+
+mar5<- plot[[1]][["data"]][,2:4]
+mar5$Missing<-"5 %"
+mar5$type<-"MAR"
+
+mar10<- plot[[2]][["data"]][,2:4]
+mar10$Missing<-"10 %"
+mar10$type<-"MAR"
+
+mar20<- plot[[3]][["data"]][,2:4]
+mar20$Missing<-"20 %"
+mar20$type<-"MAR"
+
+mar30<- plot[[4]][["data"]][,2:4]
+mar30$Missing<-"30 %"
+mar30$type<-"MAR"
+
+mar40<- plot[[5]][["data"]][,2:4]
+mar40$Missing<-"40 %"
+mar40$type<-"MAR"
+
+mar <-rbind(mar5,mar10, mar20,mar30,mar40)
+```
+
+##MCAR
+```{r}
+plot<-list()
+
+for(i in 1:length(p)){
+my.data.Albumin <- cbind(SCdf$S_Albumin,
+                         CALIBER_MCAR[["FULL"]][[i]][["S_Albumin"]],
+                         MICErf_MCAR[["FULL"]][[i]][["S_Albumin"]], 
+                         ncMICErf_MCAR[["FULL"]][[i]][["S_Albumin"]], 
+                         missForest_MCAR[["FULL"]][[i]][["S_Albumin"]],
+                         ncmissForest_MCAR[["FULL"]][[i]][["S_Albumin"]])
+
+my.data.TotalProtein <- cbind(SCdf$S_Total_protein,
+                         CALIBER_MCAR[["FULL"]][[i]][["S_Total_protein"]],
+                         MICErf_MCAR[["FULL"]][[i]][["S_Total_protein"]],
+                         ncMICErf_MCAR[["FULL"]][[i]][["S_Total_protein"]], 
+                         missForest_MCAR[["FULL"]][[i]][["S_Total_protein"]],
+                         ncmissForest_MCAR[["FULL"]][[i]][["S_Total_protein"]])
+
+cn<- c("Original","ncCALIBERrfimpute","MICErf","ncMICErf", "missForest", "ncmissForest")
+colnames(my.data.TotalProtein) <-cn
+colnames(my.data.Albumin) <-cn
+
+my.data.TotalProtein <-melt(my.data.TotalProtein)
+
+my.data.Albumin<-melt(my.data.Albumin)
+
+colnames(my.data.TotalProtein)[2] = "Imputation"
+colnames(my.data.Albumin)[2] = "Imputation"
+
+colnames(my.data.TotalProtein)[3] = "TotalProtein"
+colnames(my.data.Albumin)[3] = "Albumin"
+
+my.data<- cbind(my.data.TotalProtein, my.data.Albumin[,"Albumin"])
+colnames(my.data)[4] = "Albumin"
+
+
+# Fit polynomial regression line and add labels
+formula <- y ~ x
+plot [[i]]<- ggplot(my.data, aes(x=Albumin, y=TotalProtein, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  stat_regline_equation(
+    aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+    formula = formula
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle(paste("MCAR Albumin and Total Protein ",p[,i] *100,"% Missing",sep=""))
+}
+
+mcar5<- plot[[1]][["data"]][,2:4]
+mcar5$Missing<-"5 %"
+mcar5$type<-"MCAR"
+
+mcar10<- plot[[2]][["data"]][,2:4]
+mcar10$Missing<-"10 %"
+mcar10$type<-"MCAR"
+
+mcar20<- plot[[3]][["data"]][,2:4]
+mcar20$Missing<-"20 %"
+mcar20$type<-"MCAR"
+
+mcar30<- plot[[4]][["data"]][,2:4]
+mcar30$Missing<-"30 %"
+mcar30$type<-"MCAR"
+
+mcar40<- plot[[5]][["data"]][,2:4]
+mcar40$Missing<-"40 %"
+mcar40$type<-"MCAR"
+
+mcar <-rbind(mcar5,mcar10, mcar20,mcar30,mcar40)
+```
+
+##MNAR
+```{r}
+plot<-list()
+
+for(i in 1:length(p)){
+my.data.Albumin <- cbind(SCdf$S_Albumin,
+                         CALIBER_MNAR[["FULL"]][[i]][["S_Albumin"]],
+                         MICErf_MNAR[["FULL"]][[i]][["S_Albumin"]], 
+                         ncMICErf_MNAR[["FULL"]][[i]][["S_Albumin"]], 
+                         missForest_MNAR[["FULL"]][[i]][["S_Albumin"]],
+                         ncmissForest_MNAR[["FULL"]][[i]][["S_Albumin"]])
+
+my.data.TotalProtein <- cbind(SCdf$S_Total_protein,
+                         CALIBER_MNAR[["FULL"]][[i]][["S_Total_protein"]],
+                         MICErf_MNAR[["FULL"]][[i]][["S_Total_protein"]],
+                         ncMICErf_MNAR[["FULL"]][[i]][["S_Total_protein"]], 
+                         missForest_MNAR[["FULL"]][[i]][["S_Total_protein"]],
+                         ncmissForest_MNAR[["FULL"]][[i]][["S_Total_protein"]])
+
+cn<- c("Original","ncCALIBERrfimpute","MICErf","ncMICErf", "missForest", "ncmissForest")
+colnames(my.data.TotalProtein) <-cn
+colnames(my.data.Albumin) <-cn
+
+my.data.TotalProtein <-melt(my.data.TotalProtein)
+
+my.data.Albumin<-melt(my.data.Albumin)
+
+colnames(my.data.TotalProtein)[2] = "Imputation"
+colnames(my.data.Albumin)[2] = "Imputation"
+
+colnames(my.data.TotalProtein)[3] = "TotalProtein"
+colnames(my.data.Albumin)[3] = "Albumin"
+
+my.data<- cbind(my.data.TotalProtein, my.data.Albumin[,"Albumin"])
+colnames(my.data)[4] = "Albumin"
+
+
+# Fit polynomial regression line and add labels
+formula <- y ~ x
+plot [[i]]<- ggplot(my.data, aes(x=Albumin, y=TotalProtein, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  stat_regline_equation(
+    aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+    formula = formula
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle(paste("MNAR Albumin and Total Protein ",p[,i] *100,"% Missing",sep=""))
+}
+
+mnar5<- plot[[1]][["data"]][,2:4]
+mnar5$Missing<-"5 %"
+mnar5$type<-"MNAR"
+
+mnar10<- plot[[2]][["data"]][,2:4]
+mnar10$Missing<-"10 %"
+mnar10$type<-"MNAR"
+
+mnar20<- plot[[3]][["data"]][,2:4]
+mnar20$Missing<-"20 %"
+mnar20$type<-"MNAR"
+
+mnar30<- plot[[4]][["data"]][,2:4]
+mnar30$Missing<-"30 %"
+mnar30$type<-"MNAR"
+
+mnar40<- plot[[5]][["data"]][,2:4]
+mnar40$Missing<-"40 %"
+mnar40$type<-"MNAR"
+
+mnar <-rbind(mnar5,mnar10, mnar20,mnar30,mnar40)
+```
+##facet grid Albumin Total Protein
+```{r}
+AlbTotPro<- rbind(mcar, mar, mnar)
+
+AlbTotPro$Missing <- factor(AlbTotPro$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+AlbTotPro$type <- factor(AlbTotPro$type, levels = c("MCAR","MAR","MNAR"))
+
+formula <- y ~ x
+AlbTotProPlot <- ggplot(AlbTotPro, aes(x=Albumin, y=TotalProtein, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  # stat_regline_equation(
+  #   aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+  #   formula = formula ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle("Albumin and Total Protein Bias") +
+  facet_grid(Missing~type) +
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust = 0.5),
+        panel.spacing.y = unit(0,'lines'),
+        panel.spacing.x=unit(0.5, "lines"),
+        #panel.grid.major = element_blank(),
+        #panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA)) +
+  xlab("Albumin (g/L)") +
+  ylab("Total protein (g/L)")
+
+ggsave(file=paste("Albmin Total Protein Scatter ",nrow(SCdf)," Samples.svg",sep=""), plot=AlbTotProPlot, width = 10, height = 15)
+ggsave(file=paste("Albmin Total Protein Scatter ",nrow(SCdf)," Samples.pdf",sep=""), plot=AlbTotProPlot, width = 10, height = 15)
+```
+
+##MAR
+```{r pressure, echo=FALSE}
+plot<-list()
+
+for(i in 1:length(p)){
+my.data.AST <- cbind(SCdf$S_AST,
+                         CALIBER_MAR[["FULL"]][[i]][["S_AST"]],
+                         MICErf_MAR[["FULL"]][[i]][["S_AST"]], 
+                         ncMICErf_MAR[["FULL"]][[i]][["S_AST"]], 
+                         missForest_MAR[["FULL"]][[i]][["S_AST"]],
+                         ncmissForest_MAR[["FULL"]][[i]][["S_AST"]])
+
+my.data.ALT <- cbind(SCdf$S_ALT,
+                         CALIBER_MAR[["FULL"]][[i]][["S_ALT"]],
+                         MICErf_MAR[["FULL"]][[i]][["S_ALT"]],
+                         ncMICErf_MAR[["FULL"]][[i]][["S_ALT"]], 
+                         missForest_MAR[["FULL"]][[i]][["S_ALT"]],
+                         ncmissForest_MAR[["FULL"]][[i]][["S_ALT"]])
+
+cn<- c("Original","ncCALIBERrfimpute","MICErf","ncMICErf", "missForest", "ncmissForest")
+colnames(my.data.AST) <-cn
+colnames(my.data.ALT) <-cn
+
+my.data.AST <-melt(my.data.AST)
+
+my.data.ALT<-melt(my.data.ALT)
+
+colnames(my.data.AST)[2] = "Imputation"
+colnames(my.data.ALT)[2] = "Imputation"
+
+colnames(my.data.AST)[3] = "AST"
+colnames(my.data.ALT)[3] = "ALT"
+
+my.data<- cbind(my.data.AST, my.data.ALT[,"ALT"])
+colnames(my.data)[4] = "ALT"
+
+
+# Fit polynomial regression line and add labels
+formula <- y ~ x
+plot [[i]]<- ggplot(my.data, aes(x=ALT, y=AST, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  stat_regline_equation(
+    aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+    formula = formula
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle(paste("MAR ALT and AST ",p[,i] *100,"% Missing",sep=""))
+}
+
+mar5<- plot[[1]][["data"]][,2:4]
+mar5$Missing<-"5 %"
+mar5$type<-"MAR"
+
+mar10<- plot[[2]][["data"]][,2:4]
+mar10$Missing<-"10 %"
+mar10$type<-"MAR"
+
+mar20<- plot[[3]][["data"]][,2:4]
+mar20$Missing<-"20 %"
+mar20$type<-"MAR"
+
+mar30<- plot[[4]][["data"]][,2:4]
+mar30$Missing<-"30 %"
+mar30$type<-"MAR"
+
+mar40<- plot[[5]][["data"]][,2:4]
+mar40$Missing<-"40 %"
+mar40$type<-"MAR"
+
+mar <-rbind(mar5,mar10, mar20,mar30,mar40)
+```
+
+##MCAR
+```{r}
+plot<-list()
+
+for(i in 1:length(p)){
+my.data.ALT <- cbind(SCdf$S_AST,
+                         CALIBER_MCAR[["FULL"]][[i]][["S_AST"]],
+                         MICErf_MCAR[["FULL"]][[i]][["S_AST"]], 
+                         ncMICErf_MCAR[["FULL"]][[i]][["S_AST"]], 
+                         missForest_MCAR[["FULL"]][[i]][["S_AST"]],
+                         ncmissForest_MCAR[["FULL"]][[i]][["S_AST"]])
+
+my.data.AST <- cbind(SCdf$S_ALT,
+                         CALIBER_MCAR[["FULL"]][[i]][["S_ALT"]],
+                         MICErf_MCAR[["FULL"]][[i]][["S_ALT"]],
+                         ncMICErf_MCAR[["FULL"]][[i]][["S_ALT"]], 
+                         missForest_MCAR[["FULL"]][[i]][["S_ALT"]],
+                         ncmissForest_MCAR[["FULL"]][[i]][["S_ALT"]])
+
+cn<- c("Original","ncCALIBERrfimpute","MICErf","ncMICErf", "missForest", "ncmissForest")
+colnames(my.data.AST) <-cn
+colnames(my.data.ALT) <-cn
+
+my.data.AST <-melt(my.data.AST)
+
+my.data.ALT<-melt(my.data.ALT)
+
+colnames(my.data.AST)[2] = "Imputation"
+colnames(my.data.ALT)[2] = "Imputation"
+
+colnames(my.data.AST)[3] = "AST"
+colnames(my.data.ALT)[3] = "ALT"
+
+my.data<- cbind(my.data.AST, my.data.ALT[,"ALT"])
+colnames(my.data)[4] = "ALT"
+
+
+# Fit polynomial regression line and add labels
+formula <- y ~ x
+plot [[i]]<- ggplot(my.data, aes(x=ALT, y=AST, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  stat_regline_equation(
+    aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+    formula = formula
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle(paste("MCAR ALT and AST ",p[,i] *100,"% Missing",sep=""))
+}
+
+mcar5<- plot[[1]][["data"]][,2:4]
+mcar5$Missing<-"5 %"
+mcar5$type<-"MCAR"
+
+mcar10<- plot[[2]][["data"]][,2:4]
+mcar10$Missing<-"10 %"
+mcar10$type<-"MCAR"
+
+mcar20<- plot[[3]][["data"]][,2:4]
+mcar20$Missing<-"20 %"
+mcar20$type<-"MCAR"
+
+mcar30<- plot[[4]][["data"]][,2:4]
+mcar30$Missing<-"30 %"
+mcar30$type<-"MCAR"
+
+mcar40<- plot[[5]][["data"]][,2:4]
+mcar40$Missing<-"40 %"
+mcar40$type<-"MCAR"
+
+mcar <-rbind(mcar5,mcar10, mcar20,mcar30,mcar40)
+```
+
+##MNAR
+```{r}
+plot<-list()
+
+for(i in 1:length(p)){
+my.data.ALT <- cbind(SCdf$S_AST,
+                         CALIBER_MNAR[["FULL"]][[i]][["S_AST"]],
+                         MICErf_MNAR[["FULL"]][[i]][["S_AST"]], 
+                         ncMICErf_MNAR[["FULL"]][[i]][["S_AST"]], 
+                         missForest_MNAR[["FULL"]][[i]][["S_AST"]],
+                         ncmissForest_MNAR[["FULL"]][[i]][["S_AST"]])
+
+my.data.AST <- cbind(SCdf$S_ALT,
+                         CALIBER_MNAR[["FULL"]][[i]][["S_ALT"]],
+                         MICErf_MNAR[["FULL"]][[i]][["S_ALT"]],
+                         ncMICErf_MNAR[["FULL"]][[i]][["S_ALT"]], 
+                         missForest_MNAR[["FULL"]][[i]][["S_ALT"]],
+                         ncmissForest_MNAR[["FULL"]][[i]][["S_ALT"]])
+
+cn<- c("Original","ncCALIBERrfimpute","MICErf","ncMICErf", "missForest", "ncmissForest")
+colnames(my.data.AST) <-cn
+colnames(my.data.ALT) <-cn
+
+my.data.AST <-melt(my.data.AST)
+
+my.data.ALT<-melt(my.data.ALT)
+
+colnames(my.data.AST)[2] = "Imputation"
+colnames(my.data.ALT)[2] = "Imputation"
+
+colnames(my.data.AST)[3] = "AST"
+colnames(my.data.ALT)[3] = "ALT"
+
+my.data<- cbind(my.data.AST, my.data.ALT[,"ALT"])
+colnames(my.data)[4] = "ALT"
+
+
+# Fit polynomial regression line and add labels
+formula <- y ~ x
+plot [[i]]<- ggplot(my.data, aes(x=ALT, y=AST, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  stat_regline_equation(
+    aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+    formula = formula
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle(paste("MNAR ALT and AST ",p[,i] *100,"% Missing",sep=""))
+}
+
+mnar5<- plot[[1]][["data"]][,2:4]
+mnar5$Missing<-"5 %"
+mnar5$type<-"MNAR"
+
+mnar10<- plot[[2]][["data"]][,2:4]
+mnar10$Missing<-"10 %"
+mnar10$type<-"MNAR"
+
+mnar20<- plot[[3]][["data"]][,2:4]
+mnar20$Missing<-"20 %"
+mnar20$type<-"MNAR"
+
+mnar30<- plot[[4]][["data"]][,2:4]
+mnar30$Missing<-"30 %"
+mnar30$type<-"MNAR"
+
+mnar40<- plot[[5]][["data"]][,2:4]
+mnar40$Missing<-"40 %"
+mnar40$type<-"MNAR"
+
+mnar <-rbind(mnar5,mnar10, mnar20,mnar30,mnar40)
+```
+##facet grid ALT AST
+```{r}
+AltAst<- rbind(mcar, mar, mnar)
+
+AltAst$Missing <- factor(AltAst$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+AltAst$type <- factor(AltAst$type, levels = c("MCAR","MAR","MNAR"))
+
+formula <- y ~ x
+AltAstPlot <- ggplot(AltAst, aes(x=AST, y=ALT, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+   # stat_regline_equation(
+   #   aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+   #   formula = formula ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle("ALT and AST Bias") +
+  facet_grid(Missing~type) +
+  theme(legend.position="bottom",
+        plot.title = element_text(hjust = 0.5),
+        panel.spacing.y = unit(0,'lines'),
+        panel.spacing.x=unit(0.5, "lines"),
+        #panel.grid.major = element_blank(),
+        #panel.grid.minor = element_blank(),
+        strip.background = element_blank(),
+        panel.border = element_rect(colour = "black", fill = NA)) +
+  xlab("AST (UI/L)") +
+  ylab("ALT (UI/L)")
+
+ggsave(file=paste("ALT and AST Scatter ",nrow(SCdf)," Samples.svg",sep=""), plot=AltAstPlot, width = 10, height = 15)
+ggsave(file=paste("ALT and AST Scatter ",nrow(SCdf)," Samples.pdf",sep=""), plot=AltAstPlot, width = 10, height = 15)
+```
+#main figures
+##NRMSE
+```{r}
+
+############################################################################# NRMSE
+
+scm<- scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))
+
+df<-as.data.frame(cbind(unlist(CALIBER_MCAR[["NRMSE"]]),
+                          unlist(ncMICErf_MCAR[["NRMSE"]]),
+                          unlist(ncmissForest_MCAR[["NRMSE"]]),
+                          unlist(MICErf_MCAR[["NRMSE"]]),
+                          unlist(missForest_MCAR[["NRMSE"]])))
+df2<-as.data.frame(cbind(unlist(CALIBER_MAR[["NRMSE"]]),
+                          unlist(ncMICErf_MAR[["NRMSE"]]),
+                          unlist(ncmissForest_MAR[["NRMSE"]]),
+                          unlist(MICErf_MAR[["NRMSE"]]),
+                          unlist(missForest_MAR[["NRMSE"]])))
+df3<-as.data.frame(cbind(unlist(CALIBER_MNAR[["NRMSE"]]),
+                          unlist(ncMICErf_MNAR[["NRMSE"]]),
+                          unlist(ncmissForest_MNAR[["NRMSE"]]),
+                          unlist(MICErf_MNAR[["NRMSE"]]),
+                          unlist(missForest_MNAR[["NRMSE"]])))
+
+cn<- c("ncCALIBERrfimpute","ncMICErf","ncmissForest", "MICErf", "missForest")
+colnames(df) <-cn
+colnames(df2) <-cn
+colnames(df3) <-cn
+
+rn <- c("5 %","10 %","20 %","30 %","40 %")
+
+df$Missing<-rn
+df2$Missing<-rn
+df3$Missing<-rn
+df$Missing <- factor(df$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df2$Missing <- factor(df2$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df3$Missing <- factor(df3$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+
+df<-melt(df)
+df2<-melt(df2)
+df3<-melt(df3)
+
+colnames(df)[2] = "Imputation"
+colnames(df2)[2] = "Imputation"
+colnames(df3)[2] = "Imputation"
+
+colnames(df)[3] = "NRMSE MCAR"
+colnames(df2)[3] = "NRMSE MAR"
+colnames(df3)[3] = "NRMSE MNAR"
+
+df4<- cbind(df, df2[,"NRMSE MAR"], df3[,"NRMSE MNAR"])
+colnames(df4)<- c("Missing","Imputation","MCAR","MAR","MNAR")
+NRMSEdf5<- melt(df4)
+
+#main text
+
+facetedNRMSE<- ggplot(data = NRMSEdf5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point() +
+                geom_line(aes(group = Imputation)) +
+                labs(y = "NRMSE",
+                     colour = "Imputation") +
+                theme_bw() + 
+                  theme(strip.text.x = element_blank()) +
+                theme(axis.title.x = element_blank()) +
+                # theme(strip.background =element_rect(fill="White"))+
+                # theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) +
+                theme(legend.position="none")
+
+# ggsave(file=paste("internal legend ",nrow(SCdf)," Samples.svg",sep=""), plot=internalLegend, width = 10, height = 3)
+ggsave(file=paste("NRMSE ",nrow(SCdf)," Samples.svg",sep=""), plot=facetedNRMSE, width = 10, height = 3)
+ggsave(file=paste("NRMSE ",nrow(SCdf)," Samples.pdf",sep=""), plot=facetedNRMSE, width = 10, height = 3)
+
+#sup mat
+NRMSE50<- ggplot(data = NRMSEdf5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point(size = 3) +
+                geom_line(aes(group = Imputation), size = 0.3) +
+                labs(y = "50",
+                     colour = "Imputation") +
+                theme_bw() + 
+                  theme(strip.text.x = element_blank()) +
+                theme(axis.title.x = element_blank()) +
+                # theme(strip.background =element_rect(fill="White"))+
+                # theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) +
+                theme(legend.position="none")
+
+leg <- get_legend(facetedNRMSE)
+
+# Convert to a ggplot and print
+internalLegend <- as_ggplot(leg)
+
+ ggsave(file=paste("NRMSE ",nrow(MAR[["missing 5 %"]])," Samples.pdf",sep=""), plot=NRMSE50, width = 10, height = 3)
+ ggsave(file=paste("NRMSE ",nrow(MAR[["missing 5 %"]])," Samples.svg",sep=""), plot=NRMSE50, width = 10, height = 3)
+# 
+
+```
+
+##fullMAE
+```{r}
+############################################################################# fullMAE
+
+df<-as.data.frame(cbind(unlist(CALIBER_MCAR[["fullMAE"]]),
+                          unlist(ncMICErf_MCAR[["fullMAE"]]),
+                          unlist(ncmissForest_MCAR[["fullMAE"]]),
+                          unlist(MICErf_MCAR[["fullMAE"]]),
+                          unlist(missForest_MCAR[["fullMAE"]])))
+df2<-as.data.frame(cbind(unlist(CALIBER_MAR[["fullMAE"]]),
+                          unlist(ncMICErf_MAR[["fullMAE"]]),
+                          unlist(ncmissForest_MAR[["fullMAE"]]),
+                          unlist(MICErf_MAR[["fullMAE"]]),
+                          unlist(missForest_MAR[["fullMAE"]])))
+df3<-as.data.frame(cbind(unlist(CALIBER_MNAR[["fullMAE"]]),
+                          unlist(ncMICErf_MNAR[["fullMAE"]]),
+                          unlist(ncmissForest_MNAR[["fullMAE"]]),
+                          unlist(MICErf_MNAR[["fullMAE"]]),
+                          unlist(missForest_MNAR[["fullMAE"]])))
+
+cn<- c("ncCALIBERrfimpute","ncMICErf","ncmissForest", "MICErf", "missForest")
+colnames(df) <-cn
+colnames(df2) <-cn
+colnames(df3) <-cn
+
+df$Missing<-rn
+df2$Missing<-rn
+df3$Missing<-rn
+df$Missing <- factor(df$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df2$Missing <- factor(df2$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df3$Missing <- factor(df3$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+
+df<-melt(df)
+df2<-melt(df2)
+df3<-melt(df3)
+
+colnames(df)[2] = "Imputation"
+colnames(df2)[2] = "Imputation"
+colnames(df3)[2] = "Imputation"
+
+colnames(df)[3] = "fullMAE MCAR"
+colnames(df2)[3] = "fullMAE MAR"
+colnames(df3)[3] = "fullMAE MNAR"
+
+df4<- cbind(df, df2[,"fullMAE MAR"], df3[,"fullMAE MNAR"])
+colnames(df4)<- c("Missing","Imputation","MCAR","MAR","MNAR")
+fullMAEdf5<- melt(df4)
+
+sampleNo<- paste(nrow(SCdf), "Total Samples")
+
+#main text
+facetedfullMAE<- ggplot(data = fullMAEdf5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point() +
+                geom_line(aes(group = Imputation)) +
+                labs(y = "Full MAE",
+                     colour = "Imputation") +
+                theme_bw() + 
+                  theme(strip.text.x = element_blank()) +
+                theme(axis.title.x = element_blank()) +
+                # theme(strip.background =element_rect(fill="White"))+
+                # theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) +
+                theme(legend.position="none")
+#+ labs(caption = sampleNo)
+ ggsave(file=paste("fullMAE ",nrow(SCdf)," Samples.svg",sep=""), plot=facetedfullMAE, width = 10, height = 3)
+ ggsave(file=paste("fullMAE ",nrow(SCdf)," Samples.pdf",sep=""), plot=facetedfullMAE, width = 10, height = 3)
+
+ #sup mat
+fullMAE50<- ggplot(data = fullMAEdf5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point(size = 3) +
+                geom_line(aes(group = Imputation), size = 0.3) +
+                labs(y = "50",
+                     colour = "Imputation") +
+                theme_bw() + 
+                  theme(strip.text.x = element_blank()) +
+                theme(axis.title.x = element_blank()) +
+                # theme(strip.background =element_rect(fill="White"))+
+                # theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) +
+                theme(legend.position="none")
+
+ggsave(file=paste("fullMAE ",nrow(MAR[["missing 5 %"]])," Samples.pdf",sep=""), plot=fullMAE50, width = 10, height = 3)
+ggsave(file=paste("fullME ",nrow(MAR[["missing 5 %"]])," Samples.svg",sep=""), plot=fullMAE50, width = 10, height = 3)
+
+
+```
+
+##partial MAE
+```{r}
+
+############################################################################# partialMAE
+
+df<-as.data.frame(cbind(unlist(CALIBER_MCAR[["partialMAE"]]),
+                          unlist(ncMICErf_MCAR[["partialMAE"]]),
+                          unlist(ncmissForest_MCAR[["partialMAE"]]),
+                          unlist(MICErf_MCAR[["partialMAE"]]),
+                          unlist(missForest_MCAR[["partialMAE"]])))
+df2<-as.data.frame(cbind(unlist(CALIBER_MAR[["partialMAE"]]),
+                          unlist(ncMICErf_MAR[["partialMAE"]]),
+                          unlist(ncmissForest_MAR[["partialMAE"]]),
+                          unlist(MICErf_MAR[["partialMAE"]]),
+                          unlist(missForest_MAR[["partialMAE"]])))
+df3<-as.data.frame(cbind(unlist(CALIBER_MNAR[["partialMAE"]]),
+                          unlist(ncMICErf_MNAR[["partialMAE"]]),
+                          unlist(ncmissForest_MNAR[["partialMAE"]]),
+                          unlist(MICErf_MNAR[["partialMAE"]]),
+                          unlist(missForest_MNAR[["partialMAE"]])))
+
+cn<- c("ncCALIBERrfimpute","ncMICErf","ncmissForest", "MICErf", "missForest")
+colnames(df) <-cn
+colnames(df2) <-cn
+colnames(df3) <-cn
+
+df$Missing<-rn
+df2$Missing<-rn
+df3$Missing<-rn
+df$Missing <- factor(df$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df2$Missing <- factor(df2$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df3$Missing <- factor(df3$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+
+df<-melt(df)
+df2<-melt(df2)
+df3<-melt(df3)
+
+colnames(df)[2] = "Imputation"
+colnames(df2)[2] = "Imputation"
+colnames(df3)[2] = "Imputation"
+
+colnames(df)[3] = "partialMAE MCAR"
+colnames(df2)[3] = "partialMAE MAR"
+colnames(df3)[3] = "partialMAE MNAR"
+
+df4<- cbind(df, df2[,"partialMAE MAR"], df3[,"partialMAE MNAR"])
+colnames(df4)<- c("Missing","Imputation","MCAR","MAR","MNAR")
+partialMAEdf5<- melt(df4)
+
+sampleNo<- paste(nrow(SCdf), "Total Samples")
+
+#main text
+facetedpartialMAE<- ggplot(data = partialMAEdf5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point() +
+                geom_line(aes(group = Imputation)) +
+                labs(y = "Partial MAE",
+                     colour = "Imputation") +
+                theme_bw() + 
+                theme(strip.text.x = element_blank()) +
+                theme(axis.title.x = element_blank()) +
+                scm +
+                facet_wrap(~ variable) +
+                theme(legend.position="none")
+                # theme(strip.background =element_rect(fill="White"))+
+                # theme(strip.text = element_text(colour = "Black"))+
+#+ labs(caption = sampleNo)
+
+ggsave(file=paste("partialMAE ",nrow(SCdf)," Samples.svg",sep=""), plot=facetedpartialMAE, width = 10, height = 3)
+ggsave(file=paste("partialMAE ",nrow(SCdf)," Samples.pdf",sep=""), plot=facetedpartialMAE, width = 10, height = 3)
+
+#sup mat
+partialMAE50<- ggplot(data = partialMAEdf5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point(size = 3) +
+                geom_line(aes(group = Imputation), size = 0.3) +
+                labs(y = "50",
+                     colour = "Imputation") +
+                theme_bw() + 
+                  theme(strip.text.x = element_blank()) +
+                theme(axis.title.x = element_blank()) +
+                # theme(strip.background =element_rect(fill="White"))+
+                # theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) +
+                theme(legend.position="none")
+
+ggsave(file=paste("partialMAE ",nrow(MAR[["missing 5 %"]])," Samples.pdf",sep=""), plot=partialMAE50, width = 10, height = 3)
+ggsave(file=paste("partialMAE ",nrow(MAR[["missing 5 %"]])," Samples.svg",sep=""), plot=partialMAE50, width = 10, height = 3)
+
+
+```
+##bias 1
+```{r}
+############################################################################# imputedBias.1
+
+##External check 1
+#Albumin and total protein
+
+#set up external checks
+original.lm.1 <- summary(lm(S_Albumin ~ S_Total_protein, data = SCdf))
+# original.lm.1[["r.squared"]]
+original <-original.lm.1[["coefficients"]][2,1]
+
+missed_MCAR<-list()
+missedSummary<-list()
+missedBias_MCAR<-list()
+for(j in 1:length(MAR)){
+  missedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = MAR[[j]], na.action = na.omit))
+  missed_MCAR[[j]] <-missedSummary[[j]][["coefficients"]][2,1]
+  missedBias_MCAR[[j]] <- abs((original - missed_MCAR[[j]])/original)
+}
+
+
+df<-as.data.frame(cbind(unlist(missedBias),
+                          unlist(CALIBER_MCAR[["imputedBias.1"]]),
+                          unlist(ncMICErf_MCAR[["imputedBias.1"]]),
+                          unlist(ncmissForest_MCAR[["imputedBias.1"]]),
+                          unlist(MICErf_MCAR[["imputedBias.1"]]),
+                          unlist(missForest_MCAR[["imputedBias.1"]])))
+df2<-as.data.frame(cbind(unlist(missedBias),
+                         unlist(CALIBER_MAR[["imputedBias.1"]]),
+                          unlist(ncMICErf_MAR[["imputedBias.1"]]),
+                          unlist(ncmissForest_MAR[["imputedBias.1"]]),
+                          unlist(MICErf_MAR[["imputedBias.1"]]),
+                          unlist(missForest_MAR[["imputedBias.1"]])))
+df3<-as.data.frame(cbind(unlist(missedBias),
+                          unlist(CALIBER_MNAR[["imputedBias.1"]]),
+                          unlist(ncMICErf_MNAR[["imputedBias.1"]]),
+                          unlist(ncmissForest_MNAR[["imputedBias.1"]]),
+                          unlist(MICErf_MNAR[["imputedBias.1"]]),
+                          unlist(missForest_MNAR[["imputedBias.1"]])))
+
+cn<- c("incomplete","ncCALIBERrfimpute","ncMICErf","ncmissForest", "MICErf", "missForest")
+colnames(df) <-cn
+colnames(df2) <-cn
+colnames(df3) <-cn
+
+df$Missing<-rn
+df2$Missing<-rn
+df3$Missing<-rn
+df$Missing <- factor(df$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df2$Missing <- factor(df2$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df3$Missing <- factor(df3$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+
+df<-melt(df)
+df2<-melt(df2)
+df3<-melt(df3)
+
+colnames(df)[2] = "Imputation"
+colnames(df2)[2] = "Imputation"
+colnames(df3)[2] = "Imputation"
+
+colnames(df)[3] = "imputedBias.1 MCAR"
+colnames(df2)[3] = "imputedBias.1 MAR"
+colnames(df3)[3] = "imputedBias.1 MNAR"
+
+df4<- cbind(df, df2[,"imputedBias.1 MAR"], df3[,"imputedBias.1 MNAR"])
+colnames(df4)<- c("Missing","Imputation","MCAR","MAR","MNAR")
+imputedBias.1df5<- melt(df4)
+
+sampleNo<- paste(nrow(SCdf), "Total Samples")
+
+#main text
+facetedimputedBias.1<- ggplot(data = imputedBias.1df5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point() +
+                geom_line(aes(group = Imputation)) +
+                labs(y = "Bias",
+                     colour = "Imputation",
+                     title = "Albumin to Total Protein Bias") +
+                theme_bw() + 
+                theme(strip.background =element_rect(fill="White"))+
+                theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) 
+#+ labs(caption = sampleNo)
+
+ggsave(file=paste("imputedBias.1 ",nrow(SCdf)," Samples.svg",sep=""), plot=facetedimputedBias.1, width = 10, height = 3)
+ggsave(file=paste("imputedBias.1 ",nrow(SCdf)," Samples.pdf",sep=""), plot=facetedimputedBias.1, width = 10, height = 3)
+
+#sup mat
+Bias1_50<- ggplot(data = imputedBias.1df5, aes(x= `Missing`, y = `value`, colour = Imputation)) +
+                geom_point(size = 3) +
+                geom_line(aes(group = Imputation), size = 0.3) +
+                labs(y = "50",
+                     colour = "Imputation") +
+                theme_bw() + 
+                  theme(strip.text.x = element_blank()) +
+                theme(axis.title.x = element_blank()) +
+                # theme(strip.background =element_rect(fill="White"))+
+                # theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) +
+                theme(legend.position="none")
+
+ggsave(file=paste("Bias1 ",nrow(MAR[["missing 5 %"]])," Samples.pdf",sep=""), plot=Bias1_50, width = 10, height = 3)
+ggsave(file=paste("Bias1 ",nrow(MAR[["missing 5 %"]])," Samples.svg",sep=""), plot=Bias1_50, width = 10, height = 3)
+```
+##bias 2
+```{r}
+############################################################################# imputedBias.2
+
+df<-as.data.frame(cbind(unlist(missedBias),
+                        unlist(CALIBER_MCAR[["imputedBias.2"]]),
+                          unlist(ncMICErf_MCAR[["imputedBias.2"]]),
+                          unlist(ncmissForest_MCAR[["imputedBias.2"]]),
+                          unlist(MICErf_MCAR[["imputedBias.2"]]),
+                          unlist(missForest_MCAR[["imputedBias.2"]])
+                        ))
+df2<-as.data.frame(cbind(unlist(missedBias),
+                         unlist(CALIBER_MAR[["imputedBias.2"]]),
+                          unlist(ncMICErf_MAR[["imputedBias.2"]]),
+                          unlist(ncmissForest_MAR[["imputedBias.2"]]),
+                          unlist(MICErf_MAR[["imputedBias.2"]]),
+                          unlist(missForest_MAR[["imputedBias.2"]])
+                         ))
+df3<-as.data.frame(cbind(unlist(missedBias),
+                         unlist(CALIBER_MNAR[["imputedBias.2"]]),
+                          unlist(ncMICErf_MNAR[["imputedBias.2"]]),
+                          unlist(ncmissForest_MNAR[["imputedBias.2"]]),
+                          unlist(MICErf_MNAR[["imputedBias.2"]]),
+                          unlist(missForest_MNAR[["imputedBias.2"]])
+                         ))
+
+cn<- c("incomplete","ncCALIBERrfimpute","ncMICErf","ncmissForest", "MICErf", "missForest")
+colnames(df) <-cn
+colnames(df2) <-cn
+colnames(df3) <-cn
+
+df$Missing<-rn
+df2$Missing<-rn
+df3$Missing<-rn
+df$Missing <- factor(df$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df2$Missing <- factor(df2$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+df3$Missing <- factor(df3$Missing, levels = c("5 %","10 %","20 %","30 %","40 %"))
+
+df<-melt(df)
+df2<-melt(df2)
+df3<-melt(df3)
+
+colnames(df)[2] = "Imputation"
+colnames(df2)[2] = "Imputation"
+colnames(df3)[2] = "Imputation"
+
+colnames(df)[3] = "imputedBias.2 MCAR"
+colnames(df2)[3] = "imputedBias.2 MAR"
+colnames(df3)[3] = "imputedBias.2 MNAR"
+
+df4<- cbind(df, df2[,"imputedBias.2 MAR"], df3[,"imputedBias.2 MNAR"])
+colnames(df4)<- c("Missing","Imputation","MCAR","MAR","MNAR")
+imputedBias.2df5<- melt(df4)
+
+sampleNo<- paste(nrow(SCdf), "Total Samples")
+
+#main text
+facetedimputedBias.2<- ggplot(data = imputedBias.2df5, aes(x= `Missing`, y = `value`, colour = Imputation), alpha = 0.4) +
+                geom_point() +
+                geom_line(aes(group = Imputation)) +
+                labs(y = "Bias",
+                     colour = "Imputation",
+                     title = "AST to ALT Bias") +
+                theme_bw() + 
+                theme(strip.background =element_rect(fill="White"))+
+                theme(strip.text = element_text(colour = "Black"))+
+                scm +
+                facet_wrap(~ variable) 
+#+ labs(caption = sampleNo)
+
+ggsave(file=paste("imputedBias.2 ",nrow(SCdf)," Samples.svg",sep=""), plot=facetedimputedBias.2, width = 10, height = 3)
+ggsave(file=paste("imputedBias.2 ",nrow(SCdf)," Samples.pdf",sep=""), plot=facetedimputedBias.2, width = 10, height = 3)
+```
+#sup mat figures
+##facet by sample size
+###n = 50
+```{r}
+load("~/Documents/COMET/Data/data50.RData")
+
+
+
+ggsave(file=paste("NRMSE ",nrow(MAR[["missing 5 %"]])," Samples.pdf",sep=""), plot=NRMSE50, width = 10, height = 3)
+```
+
+###n = 500
+

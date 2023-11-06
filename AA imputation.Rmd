@@ -1,0 +1,2713 @@
+---
+title: "Untitled"
+author: "Lucy Grigoroff"
+date: "2023-07-06"
+output:
+  pdf_document: default
+  html_document: default
+---
+Amino Acids 
+
+The Cystine and gamma analytes were introduced for consistency checks. Not unusal to see them with mostly missing values.
+
+Suggested by Nathan, if a subject or column has greater than 80% missing analytes, it would be best to exclude it/them (as a general rule). 
+
+LTR is cut out during the process. LTR should be the standard for ratio of targeted quantified results. 
+
+Possible external check. Observe the ratio of Glutamic.acid and Glutamine for groups of covid and healthy. Then observe this ratio for those which you imputed, do the results match that of the non-imputed? If Glutamine > Glutamic.acid for healthy, but the healthy sample where you had to impute either of these analytes doesn't match that, something is wrong. 
+
+Speak to shab about AA table rather than Data elements?
+
+```{r}
+# library(missForest)
+#  library(mice)
+#  library(CALIBERrfimpute)
+#  library(randomForest)
+#  library(missMethods)
+#  library(lpSolve)
+# # devtools::install_github("strengejacke/sjmisc")
+#  library(sjmisc)
+#  library(tidyverse)
+#  library(ggpubr)
+# library(reshape2)
+# library(ggpmisc)
+# library(egg)
+# library(devEMF)
+# library(see)
+
+```
+#Global DT 
+provided by Shabri on the 20th Sept 2023. Difficulties with sampletype assignment fixed as well as sampleID. It omits healthy bank and the original Cambridge as there are excel files instead of tsv, possible that there have been changes made, the other cohorts are directly from tsv. 
+
+Shabri is using the ms-parsor and fusion with the tsvs. These omit a few anlytes like tryptophan, which means they are not in the dataTable but they are in the dataElements created by Reika. 
+```{r}
+globalDT_AA <- readRDS("~/Downloads/globalDT_AA (1).rds")
+# testnas<-rowSums(is.na(globalDT_AA))
+# pna<-list()
+# for(i in 1:length(testnas)){
+#  pna[i] <-testnas[i]/nrow(globalDT_AA)*100
+# }
+# which(pna>0.5)
+# 
+# globalDT_AA <-as.data.frame(globalDT_AA)
+# 
+# for(i in 6:ncol(globalDT_AA)){
+#  globalDT_AA[,i] <- as.numeric(globalDT_AA[,i])
+# }
+# 
+# globalDT_AA[sapply(globalDT_AA, is.character)] <- lapply(globalDT_AA[sapply(globalDT_AA, is.character)], as.factor)
+
+#imp<-missForest(xmis = (globalDT_AA[,!names(globalDT_AA) %in% c("sampleID")]), ntree = 10, variablewise = F)
+```
+#Serum
+##Biogune 
+Contains covid, diabetes and controls but is really SERUM not PLASMA
+
+```{r}
+#sampleMatrixType SER
+ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/bioGune/dataElements/covid19_bioGune_PLA_ANN.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/bioGune/dataElements/covid19_bioGune_PLA_AA.daE"))))
+cohort<- "bioGune"
+```
+
+##Heidleberg
+```{r}
+#sampleMatrixType SER
+ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/heidelberg/DataElements/covid19_heidelberg_ANN.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/heidelberg/DataElements/covid19_heidelberg_SER_AA.daE"))))
+cohort<- "heidelberg"
+```
+
+##harvard
+```{r}
+#sampleMatrixType SER
+ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/harvard/DataElements/covid19_harvard_PLA_ANN.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/harvard/DataElements/covid19_harvard_PLA_AA.daE"))))
+cohort<- "harvard"
+```
+#Plasma
+##Cambridge
+###Cambridge
+```{r}
+ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_ANN_fix.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_AA2.daE"))))
+cohort<- "cambridge"
+```
+
+###Cambridge Follow Up 1
+```{r}
+ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_ANN_fix.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/cambridgeFollowUp/DataElements/covid19_cambridgeFollowUp_PLA_AA.daE"))))
+cohort<- "cambridgeFU1"
+```
+
+###Cambridge Follow Up 2
+```{r}
+ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_ANN_fix.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/cambridgeFollowUpPart2/DataElements/covid19_cambridgeFU2_PLA_AA.daE"))))
+cohort<- "cambridgeFU2"
+```
+##Pathwest
+```{r}
+ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/pathwestFollowUp/DataElements/covid19_pathwestFU_ANN_recovery.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/pathwestFollowUp/DataElements/covid19_pathwestFU_PLA_AA.daE"))))
+cohort<- "pathwest"
+```
+##healthyBank
+```{r}
+#matrixname PLA
+ann<-local(get(load("~/Downloads/covid19_HTYBK_ANN.daE")))
+aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/healthyBank/DataElements/covid19_HTYBK_PLA_AA.daE"))))
+cohort<- "healthyBank"
+```
+
+
+#Data Generation
+```{r}
+######################Dataset with missing#######################################
+
+#ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/bioGune/dataElements/covid19_bioGune_PLA_ANN.daE")))
+aaMeta1<-ann@obsDescr[[1]]
+
+#aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/bioGune/dataElements/covid19_bioGune_PLA_AA.daE"))))
+aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements
+colnames(aaData)<-aa@varName
+aaMeta2<-aa@obsDescr[[1]] #metadata from covid19_mauritius_PLA_AA.daE file
+
+# match Amino Acids and both Annotations
+aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),]
+aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),]
+aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),]
+
+aaMetaF<-merge(aaMeta1,
+                  aaMeta2,
+                  by.x ="sampleID",by.y = "sampleID")
+
+#attach sample ID 
+aaData$sampleID<-aaMetaF$sampleID
+
+# #remove standards
+ aaData <- aaData[,!grepl("13C", colnames(aaData))]
+ aaData <- aaData[,!grepl("Tag", colnames(aaData))]
+
+#columns with greater than 80% missing removed
+testnas<-colSums(is.na(aaData))
+pna<-list()
+for(i in 1:length(testnas)){
+ pna[i] <-testnas[i]/nrow(aaData)*100
+}
+idx<-which(pna>80)
+if(length(idx>0)){
+ aaData<-aaData[,-idx]
+}
+
+#samples with grater than 80% missing removed
+testnas<-rowSums(is.na(aaData))
+idx<-which(testnas/ncol(aaData)*100 >80)
+if(length(idx >0)){
+  aaData<-aaData[-idx,]
+}
+aaMetaF<-aaMetaF[which(aaMetaF$sampleID %in% aaData$sampleID),]
+
+
+#columns with greater than 80% missing removed
+# testnas<-colSums(is.na(aaMetaF))
+# pna<-list()
+# for(i in 1:length(testnas)){
+#  pna[i] <-testnas[i]/nrow(aaMetaF)*100
+# }
+# idx<-which(pna>40)
+# if(length(idx>0)){
+#  aaMetaF<-aaMetaF[,-idx] 
+# }
+
+###nameing
+
+if (cohort == "bioGune") {
+  BIOG_Data <- aaData
+  BIOG_Meta <- aaMetaF
+}
+if (cohort == "heidelberg") {
+  HEID_Data <- aaData
+  HEID_Meta <- aaMetaF
+}
+if (cohort == "pathwest") {
+  PATH_Data <- aaData
+  PATH_Meta <- aaMetaF
+}
+if (cohort == "cambridge") {
+  CAM_Data <- aaData
+  CAM_Meta <- aaMetaF
+}
+if (cohort == "cambridgeFU1") {
+  CAMFU1_Data <- aaData
+  CAMFU1_Meta <- aaMetaF
+}
+if (cohort == "cambridgeFU2") {
+  CAMFU2_Data <- aaData
+  CAMFU2_Meta <- aaMetaF
+}
+if (cohort == "healthyBank") {
+  HLTHY_Data <- aaData
+  HLTHY_Meta <- aaMetaF
+}
+if (cohort == "harvard") {
+  HARV_Data <- aaData
+  HARV_Meta <- aaMetaF
+}
+
+#clean environment 
+rm(aaData, aaMeta1, aaMeta2, aaMetaF, aa, ann, cohort, pna, idx, testnas, i)
+
+```
+#Prep cohorts
+##serum
+```{r}
+BIOG_Data$cohortName<- "BIOG"
+#BIOG_Meta
+HEID_Data$cohortName<- "HEID"
+#HEID_Meta
+HARV_Data$cohortName<- "HARV"
+#HARV_Meta
+
+#remove [IS] from colnames   
+  colnames(BIOG_Data)<- gsub(pattern = "\\[|IS\\]|", "", colnames(BIOG_Data))
+  colnames(HEID_Data)<- gsub(pattern = "\\[|IS\\]|", "", colnames(HEID_Data))
+  colnames(HARV_Data)<- gsub(pattern = "\\[|IS\\]|", "", colnames(HARV_Data))
+  #remove space at end of colnames
+ colnames(BIOG_Data)<-str_trim(colnames(BIOG_Data), side = c("right"))
+ colnames(HEID_Data)<-str_trim(colnames(HEID_Data), side = c("right"))
+ colnames(HARV_Data)<-str_trim(colnames(HARV_Data), side = c("right"))
+
+#metadata
+
+#unify column names
+#####sex
+#BIOG_Meta$sex
+ colnames(HARV_Meta)[colnames(HARV_Meta) == "Sex"] ="sex"
+# colnames(HEID_Meta)[colnames(HEID_Meta) == "sex"] ="Sex"
+
+BIOG_Meta$sex <- ifelse(BIOG_Meta$sex=="male","M", 
+                            ifelse(BIOG_Meta$sex=="female", "F", "F"))
+
+HEID_Meta$sex <- ifelse(HEID_Meta$Sex=="Male","M", 
+                            ifelse(HEID_Meta$Sex=="Female", "F",
+                                  ifelse(HEID_Meta$Sex=="NA",'NA', 'NA')))
+
+#####age
+#BIOG_Meta$age
+colnames(HARV_Meta)[colnames(HARV_Meta) == "Age"] ="age"
+# formatted date
+Date <- as.POSIXct(HEID_Meta$sampleCollectionDate, format = "%Y-%m-%d")
+HEID_Meta$age <-as.numeric(format(Date, format="%Y"))- as.numeric(HEID_Meta$`Year of Birth`)
+
+#####Batch/Plate
+#retrieve from analysis name position 6
+#HARV_Meta$plateID
+BIOG_Meta$plateID <-NA
+for(i in 1:nrow(BIOG_Meta)){
+  BIOG_Meta$plateID[i] <-strsplit(BIOG_Meta$AnalysisName,"_")[[i]][6]
+}
+
+HEID_Meta$plateID <- NA
+for(i in 1:nrow(HEID_Meta)){
+  HEID_Meta$plateID[i] <-strsplit(HEID_Meta$AnalysisName,"_")[[i]][6]
+}
+
+#####Matrix Type
+#HARV_Meta$sampleMatrixType
+#HEID_Meta$sampleMatrixType
+
+idx <- which(globalDT_AA$cohortName=="bioGune")
+BIOG<- globalDT_AA[idx,]
+BIOG<- BIOG %>% select(sampleMatrixType, sampleID)
+BIOG_Meta<-left_join(x = BIOG_Meta, y= BIOG, by = "sampleID")
+
+#####COVID status (CRP?)
+
+BIOG_Meta$covid_status <- ifelse(BIOG_Meta$group=="COVID-neg","control", 
+                            ifelse(BIOG_Meta$group=="COVID-pos", "covid",
+                                   ifelse(BIOG_Meta$group=="preCOVID", "control",
+                                          ifelse(BIOG_Meta$group=="NA", 'NA', 'NA'))))
+
+HARV_Meta$covid_status <- ifelse(HARV_Meta$`MISC/COVID/Control`=="Control","control", 
+                            ifelse(HARV_Meta$`MISC/COVID/Control`=="COVID", "covid",
+                                   ifelse(HARV_Meta$`MISC/COVID/Control`=="MISC", "covid",
+                                          ifelse(HARV_Meta$`MISC/COVID/Control`=="NA", 'NA', 'NA'))))
+
+
+HEID_Meta$covid_status <- ifelse(HEID_Meta$Status=="","control", 
+                            ifelse(HEID_Meta$Status=="Hospitalized", "covid",
+                                   ifelse(HEID_Meta$Status=="Ambulatory", "covid",
+                                          ifelse(HEID_Meta$Status=="NA", 'NA', 'NA'))))
+
+
+names_to_select <- c("sampleID", "age", "sex", "sampleMatrixType","plateID", "covid_status")
+which_names <- which(names(BIOG_Meta) %in% names_to_select)
+BIOG <- merge(BIOG_Meta[which_names], BIOG_Data, by = "sampleID")
+
+which_names <- which(names(HARV_Meta) %in% names_to_select)
+HARV <- merge(HARV_Meta[which_names], HARV_Data, by = "sampleID")
+
+which_names <- which(names(HEID_Meta) %in% names_to_select)
+HEID <- merge(HEID_Meta[which_names], HEID_Data, by = "sampleID")
+
+
+
+```
+##plasma
+```{r}
+
+  PATH_Data$cohortName<- "PATH"
+  #PATH_Meta 
+  CAM_Data$cohortName<- "CAM" 
+  #CAM_Meta 
+  CAMFU1_Data$cohortName<- "CAMFU1" 
+  #CAMFU1_Meta 
+  CAMFU2_Data$cohortName<- "CAMFU2" 
+  #CAMFU2_Meta 
+  HLTHY_Data$cohortName <- "HLTHY"
+  #HLTHY_Meta
+
+#remove [IS] from colnames   
+  colnames(CAMFU1_Data)<- gsub(pattern = "\\[|IS\\]|", "", colnames(CAMFU1_Data))
+  colnames(CAMFU2_Data)<- gsub(pattern = "\\[|IS\\]|", "", colnames(CAMFU2_Data))
+#remove space at end of colnames
+ colnames(CAMFU1_Data)<-str_trim(colnames(CAMFU1_Data), side = c("right"))
+ colnames(CAMFU2_Data)<-str_trim(colnames(CAMFU2_Data), side = c("right"))
+
+
+setdiff(colnames(CAMFU2_Data), colnames(CAMFU1_Data))
+#metadata
+
+#unify column names
+#####sex
+
+HLTHY_Meta$sex <- NA
+
+colnames(CAM_Meta)[colnames(CAM_Meta) == "gender"] ="sex"
+colnames(CAMFU1_Meta)[colnames(CAMFU1_Meta) == "gender"] ="sex"
+colnames(CAMFU2_Meta)[colnames(CAMFU2_Meta) == "gender"] ="sex"
+colnames(PATH_Meta)[colnames(PATH_Meta) == "gender"] ="sex"
+colnames(HLTHY_Meta)[colnames(HLTHY_Meta) == "Sex"] ="sex"
+
+#####age
+# CAM_Meta$age
+# CAMFU1_Meta$age
+# CAMFU2_Meta$age
+# PATH_Meta$age
+colnames(HLTHY_Meta)[colnames(HLTHY_Meta) == "Age"] ="age"
+
+
+#####Batch/Plate
+#retrieve from analysis name position 6
+
+PATH_Meta$plateID <-NA
+for(i in 1:nrow(PATH_Meta)){
+  PATH_Meta$plateID[i] <-strsplit(PATH_Meta$`Data Set`,"_")[[i]][6]
+}
+
+HLTHY_Meta$plateID <-NA
+for(i in 1:nrow(HLTHY_Meta)){
+  HLTHY_Meta$plateID[i] <-strsplit(HLTHY_Meta$`Data Set`,"_")[[i]][6]
+}
+
+CAM_Meta$plateID <- NA
+for(i in 1:nrow(CAM_Meta)){
+  CAM_Meta$plateID[i] <-strsplit(CAM_Meta$AnalysisName,"_")[[i]][6]
+}
+
+CAMFU1_Meta$plateID <- NA
+for(i in 1:nrow(CAMFU1_Meta)){
+  CAMFU1_Meta$plateID[i] <-strsplit(CAMFU1_Meta$AnalysisName,"_")[[i]][6]
+}
+
+unique(CAMFU1_Meta$plateID)
+which(is.na(HARV_Meta$AnalysisName))
+library(zoo)
+
+CAMFU1_Meta$plateID <- na.locf(CAMFU1_Meta$plateID, fromLast = TRUE)
+
+CAMFU2_Meta$plateID <- NA
+for(i in 1:nrow(CAMFU2_Meta)){
+  CAMFU2_Meta$plateID[i] <-strsplit(CAMFU2_Meta$AnalysisName,"_")[[i]][6]
+}
+
+
+#####Matrix Type
+
+colnames(HLTHY_Meta)[colnames(HLTHY_Meta) == "matrixName"] ="sampleMatrixType"
+PATH_Meta$sampleMatrixType <- "PLA"
+CAM_Meta$sampleMatrixType <- "PLA"
+
+idx <- which(globalDT_AA$cohortName== "cambridgeFollowUp")
+CAMFU1<- globalDT_AA[idx,]
+CAMFU1<- CAMFU1 %>% select(sampleMatrixType, sampleID)
+CAMFU1_Meta<-left_join(x = CAMFU1_Meta, y= CAMFU1, by = "sampleID")
+
+idx <- which(globalDT_AA$cohortName== "cambridgeFollowUpPart2")
+CAMFU2<- globalDT_AA[idx,]
+CAMFU2<- CAMFU2 %>% select(sampleMatrixType, sampleID)
+CAMFU2_Meta<-left_join(x = CAMFU2_Meta, y= CAMFU2, by = "sampleID")
+
+#####COVID status (CRP?)
+# CAM_Meta$covid_status
+# CAMFU1_Meta$covid_status
+# CAMFU2_Meta$covid_status
+PATH_Meta$covid_status <- "covid"
+HLTHY_Meta$covid_status <- "control"
+
+names_to_select <- c("sampleID", "age", "sex", "sampleMatrixType","plateID", "covid_status")
+which_names <- which(names(CAM_Meta) %in% names_to_select)
+CAM <- merge(CAM_Meta[which_names], CAM_Data, by = "sampleID")
+
+which_names <- which(names(CAMFU1_Meta) %in% names_to_select)
+CAMFU1 <- merge(CAMFU1_Meta[which_names], CAMFU1_Data, by = "sampleID")
+
+which_names <- which(names(CAMFU2_Meta) %in% names_to_select)
+CAMFU2 <- merge(CAMFU2_Meta[which_names], CAMFU2_Data, by = "sampleID")
+
+which_names <- which(names(PATH_Meta) %in% names_to_select)
+PATH <- merge(PATH_Meta[which_names], PATH_Data, by = "sampleID")
+
+which_names <- which(names(HLTHY_Meta) %in% names_to_select)
+HLTHY <- merge(HLTHY_Meta[which_names], HLTHY_Data, by = "sampleID")
+```
+
+#Artificial Missingness at 40%
+
+```{r}
+
+#cat(paste(shQuote(colnames(BIOG_Data), type="cmd"), collapse=", "))
+colsMis <- c("1-methylhistidine", "3-methylhistidine", "Alanine", "alpha-aminobutyric acid", "Arginine", "Asparagine", "Aspartic acid", "beta-alanine", "beta-aminoisobutyric acid", "Citrulline", "Glutamic acid", "Glutamine", "Glycine", "Histidine", "Isoleucine", "Leucine", "Lysine", "Methionine", "Ornithine", "Phenylalanine", "Proline", "Sarcosine", "Serine", "Taurine", "Threonine", "Tyrosine", "Valine")
+
+
+#MNAR
+#common data columns
+nm1 <- intersect(names(BIOG_Data), names(HEID_Data))
+nm1 <- intersect(nm1, names(HARV_Data))
+nm1 <- intersect(nm1, names(CAM_Data))
+nm1 <- intersect(nm1, names(CAMFU1_Data))
+nm1 <- intersect(nm1, names(CAMFU2_Data))
+nm1 <- intersect(nm1, names(PATH_Data))
+nm1 <- intersect(nm1, names(HLTHY_Data))
+
+test1<-list(BIOG_Data = BIOG_Data[nm1],
+              HEID_Data = HEID_Data[nm1],
+              HARV_Data = HARV_Data[nm1],
+              CAM_Data = CAM_Data[nm1],
+              CAMFU1_Data = CAMFU1_Data[nm1],
+              CAMFU2_Data = CAMFU2_Data[nm1],
+              PATH_Data = PATH_Data[nm1], 
+              HLTHY_Data = HLTHY_Data[nm1])
+
+
+test1Meta<- list(BIOG_Meta = BIOG_Meta,
+              HEID_Meta = HEID_Meta,
+              HARV_Meta = HARV_Meta,
+              CAM_Meta = CAM_Meta,
+              CAMFU1_Meta = CAMFU1_Meta,
+              CAMFU2_Meta = CAMFU2_Meta,
+              PATH_Meta = PATH_Meta, 
+              HLTHY_Meta = HLTHY_Meta
+            )
+ 
+test1[["BIOG_Data"]][["1-methylhistidine"]]
+
+for(j in 1:length(test1)){
+  for (i in 1:26){
+  n<- (0.4 - sum(is.na(test1[[j]][,i]))/nrow(test1[[j]]))*nrow(test1[[j]])
+  idx<- which(is.na(test1[[j]][,i]))
+  
+  if(length(idx) == 0){
+   p<- 0.4
+   df<- merge(test1[[j]], test1Meta[[j]], by ="sampleID")
+   
+  } else{ p<- n/(nrow(test1[[j]])-length(idx))
+  df<- merge(test1[[j]][-idx,], test1Meta[[j]][-idx,], by ="sampleID")
+  }
+  
+  df <-df%>%relocate("sampleID", .after = "Valine") 
+  test <- missMethods::delete_MNAR_1_to_x(ds = df,
+                                          p = p,
+                                          cols_mis = i,
+                                          cols_ctrl = c("age"),
+                                          x = 3)
+ if(length(idx) == 0){
+   test1[[j]][,i] <- test[,i]
+  } else{ test1[[j]][-idx,i] <- test[,i]}
+ 
+}
+}
+
+
+
+
+for (i in 1:27){
+  n<- (0.4 - sum(is.na(test1[,i]))/nrow(test1))*nrow(test1)
+  idx<- which(is.na(test1[,i]))
+  
+  if(length(idx) == 0){
+   p<- 0.4
+   df<- merge(test1, BIOG_Meta, by ="sampleID")
+   
+  } else{ p<- n/(nrow(test1)-length(idx))
+  df<- merge(test1[-idx,], BIOG_Meta[-idx,], by ="sampleID")
+  }
+df <-df%>%relocate("sampleID", .before = "cohortName" ) 
+  test <- missMethods::delete_MNAR_1_to_x(ds = df,
+                                          p = p,
+                                          cols_mis = i,
+                                          cols_ctrl = c("category_bergamasch"),
+                                          x = 3)
+ if(length(idx) == 0){
+   test1[,i] <- test[,i]
+  } else{ test1[-idx,i] <- test[,i]}
+ 
+}
+
+BIOG_Data<- test1[["BIOG_Data"]]
+HEID_Data<- test1[["HEID_Data"]]
+HARV_Data<- test1[["HARV_Data"]]
+CAM_Data<- test1[["CAM_Data"]]
+CAMFU1_Data<- test1[["CAMFU1_Data"]]
+CAMFU2_Data<- test1[["CAMFU2_Data"]]
+PATH_Data<- test1[["PATH_Data"]]
+HLTHY_Data<- test1[["HLTHY_Data"]]
+
+
+names_to_select <- c("sampleID", "age", "sex", "sampleMatrixType","plateID", "covid_status")
+which_names <- which(names(BIOG_Meta) %in% names_to_select)
+BIOG <- merge(BIOG_Meta[which_names], BIOG_Data, by = "sampleID")
+
+which_names <- which(names(HARV_Meta) %in% names_to_select)
+HARV <- merge(HARV_Meta[which_names], HARV_Data, by = "sampleID")
+
+which_names <- which(names(HEID_Meta) %in% names_to_select)
+HEID <- merge(HEID_Meta[which_names], HEID_Data, by = "sampleID")
+
+names_to_select <- c("sampleID", "age", "sex", "sampleMatrixType","plateID", "covid_status")
+which_names <- which(names(CAM_Meta) %in% names_to_select)
+CAM <- merge(CAM_Meta[which_names], CAM_Data, by = "sampleID")
+
+which_names <- which(names(CAMFU1_Meta) %in% names_to_select)
+CAMFU1 <- merge(CAMFU1_Meta[which_names], CAMFU1_Data, by = "sampleID")
+
+which_names <- which(names(CAMFU2_Meta) %in% names_to_select)
+CAMFU2 <- merge(CAMFU2_Meta[which_names], CAMFU2_Data, by = "sampleID")
+
+which_names <- which(names(PATH_Meta) %in% names_to_select)
+PATH <- merge(PATH_Meta[which_names], PATH_Data, by = "sampleID")
+
+which_names <- which(names(HLTHY_Meta) %in% names_to_select)
+HLTHY <- merge(HLTHY_Meta[which_names], HLTHY_Data, by = "sampleID")
+
+```
+
+#All cohorts with missing
+```{r}
+#common data columns
+nm1 <- intersect(names(BIOG), names(HEID))
+df<-rbind(BIOG[nm1],HEID[nm1])
+
+nm1 <- intersect(names(df), names(HARV))
+df<-rbind(df[nm1],HARV[nm1])
+
+nm1 <- intersect(names(df), names(CAM))
+df<-rbind(df[nm1],CAM[nm1])
+
+nm1 <- intersect(names(df), names(CAMFU1))
+df<-rbind(df[nm1],CAMFU1[nm1])
+
+nm1 <- intersect(names(df), names(CAMFU2))
+df<-rbind(df[nm1],CAMFU2[nm1])
+
+nm1 <- intersect(names(df), names(PATH))
+df<-rbind(df[nm1],PATH[nm1])
+
+nm1 <- intersect(names(df), names(HLTHY))
+df<-rbind(df[nm1],HLTHY[nm1])
+
+
+df <-df%>%relocate("cohortName", .before = "sampleID" ) 
+
+names(df)
+
+cat(paste(shQuote(names(df), type="cmd"), collapse=", "))
+names_to_select <- c("cohortName", "sampleID", "sex", "age", "plateID", "covid_status", "1-methylhistidine", "3-methylhistidine", "Alanine", "alpha-aminobutyric acid", "Arginine", "Asparagine", "Aspartic acid", "beta-alanine", "Citrulline", "Glutamic acid", "Glutamine", "Glycine", "Histidine", "Isoleucine", "Leucine", "Lysine", "Methionine", "Ornithine", "Phenylalanine", "Proline", "Sarcosine", "Serine", "Taurine", "Threonine", "Tyrosine", "Valine")
+
+# listdf<- list(BIOG = BIOG,
+#               HEID = HEID,
+#               HARV = HARV,
+#               CAM = CAM,
+#               CAMFU1 = CAMFU1,
+#               CAMFU2 = CAMFU2,
+#               PATH = PATH, 
+#               HLTHY = HLTHY)
+# for(i in 1:length(listdf)){
+#   which_names <- which(names(listdf[[i]]) %in% names_to_select)
+# listdf[[i]] <- listdf[[i]][which_names]
+# listdf[[i]] <- listdf[[i]]%>%relocate("cohortName", .before = "sampleID" ) 
+# 
+# #remove numeric column NAs
+# listdf[[i]]<- merge(listdf[[i]][,1:6],na.omit(listdf[[i]][,c(2,7:32)]), by="sampleID")
+# }
+
+
+# test<- rbind(listdf[[1]], listdf[[2]])
+# caption_text <- paste0(nrow(test), " samples")
+#         testPCA<-PCA(data=test[,7:32])
+#          plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName, PCi=1, PCj=2,  discretePalette = c(
+#                                "BIOG" =  "yellow",
+#                                 "HEID" = "green",
+#                                "HARV" = "purple",
+#                                "CAM" = "#0000CC",
+#                                "CAMFU1" = "#00AAFF",
+#                                "CAMFU2" = "#00FFFF",
+#                                "PATH" = "#FFAA00",
+#                                "HLTHY"= "#FF0000"),
+#                                theme = 
+#   labs(caption = caption_text)))
+         
+
+# pc1pc2<-list()
+# 
+#  for(i in 1:length(listdf)){
+#    for(j in 1:length(listdf)){
+#      if(j>i){
+#         test<- rbind(listdf[[i]], listdf[[j]])
+#         pair_name <- paste0(names(listdf[i]), "vs", names(listdf[j]))
+#         testPCA<-PCA(data=test[,7:32])
+#          plot<-plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName, PCi=1, PCj=2,  discretePalette = c(
+#                                "BIOG" =  "yellow",
+#                                 "HEID" = "green",
+#                                "HARV" = "purple",
+#                                "CAM" = "#0000CC",
+#                                "CAMFU1" = "#00AAFF",
+#                                "CAMFU2" = "#00FFFF",
+#                                "PATH" = "#FFAA00",
+#                                "HLTHY"= "#FF0000")))
+#           new_list <- setNames(list(plot), pair_name)
+#           pc1pc2 <- append(pc1pc2, new_list)
+#      }
+#    }
+# } 
+# 
+#    
+# pc1pc2[["BIOGvsHEID"]] + theme(legend.position = "none") +labs(title= NULL)
+# 
+# plotBIOG <- ggarrange(plots=list(pc1pc2[[1]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[2]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[3]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[4]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[5]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[6]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[7]] + theme(legend.position = "none") +labs(title= NULL)), ncol = 2)
+# 
+# plotHEID <-ggarrange(plots=list(pc1pc2[[8]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[9]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[10]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[11]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[12]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[13]] + theme(legend.position = "none") +labs(title= NULL)), ncol=2)
+# 
+# plotHARV <-ggarrange(plots=list(pc1pc2[[14]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[15]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[16]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[17]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[18]] + theme(legend.position = "none") +labs(title= NULL)), ncol=2)
+# 
+# plotCAM <-ggarrange(plots=list(pc1pc2[[19]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[20]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[21]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[22]] + theme(legend.position = "none") +labs(title= NULL) ), ncol=2)
+# 
+# plotCAMFU1 <-ggarrange(plots=list(pc1pc2[[23]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[24]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[25]] + theme(legend.position = "none") +labs(title= NULL) ), ncol=2)
+# 
+# plotCAMFU2 <-ggarrange(plots=list(pc1pc2[[26]] + theme(legend.position = "none") +labs(title= NULL),
+#                      pc1pc2[[27]] + theme(legend.position = "none") +labs(title= NULL) ), ncol=2,
+#           common.legend=TRUE)
+# 
+# plotHLTHY <-pc1pc2[[28]] + theme(legend.position = "none") +labs(title= NULL)
+# 
+# ggsave(file=paste("BIOG PCAs",nrow(SCdf),"samples (complete only).svg",sep=""), plot=plotBIOG, width = 10, height = 3)
+```
+#functions
+```{r}
+functionDir <- "~/git/phenological/mva-plots/R/"
+functionList <- list.files(path = functionDir)
+for(i in functionList){
+  source(paste0(functionDir,i))
+}
+```
+#Complete cases
+```{r}
+#PC1 and PC2 with complete cases only 
+test<- na.omit(df[,c(2,8:33)])
+test <- merge(df[1:7], test, by="sampleID")
+testPCA<-PCA(data=test[,8:33])
+
+
+ellipsedf<-cbind(testPCA[["data"]][["scores"]][,1:2], as.character(test$cohortName))
+ellipsedf <- as.data.frame(ellipsedf)
+
+
+#ellipsedf[,"PC1"]
+ellipsedf<-as.character(test$cohortName)
+```
+#Group Imputation (with recalculation)
+```{r}
+
+
+#IMPUTE
+df[sapply(df, is.character)] <- lapply(df[sapply(df, is.character)], as.factor)
+tryimp<-missForest(xmis= df[ , !names(df) %in% c("sampleID")])
+col_names <-colnames(tryimp[["ximp"]])
+
+idx<- as.data.frame(which(is.na(df[, !names(df) %in% "sampleID"]), arr.ind=TRUE))
+
+#make empty list to fill with original and imputed
+idx$imputed<-idx$sampleID<- idx$variable<-NA
+
+  
+  #fill original column
+  idx$sampleID<-df[idx$row,"sampleID"]
+  
+  for(i in 1:nrow(idx)){
+    #fill imputed column
+   idx$imputed[i]<-tryimp[["ximp"]][idx$row[i],idx$col[i]]
+   #fill variable column
+   idx$variable[i] <-col_names[idx$col[i]]
+   
+  }
+tryimp[["ximp"]][["cohortName"]] <-df$cohortName
+tryimp[["ximp"]][["sampleID"]]<- as.character(df$sampleID)
+tryimp[["ximp"]][["cohortName"]] <- as.character(tryimp[["ximp"]][["cohortName"]])
+
+
+  #change the cohort name label of those imputed
+matching_row <-list()
+ for (i in 1:nrow(idx)) {
+  matching_row[i] <- which(tryimp[["ximp"]][["sampleID"]] == idx$sampleID[i])
+ }
+
+matching_row<-unique(matching_row)
+
+for(i in 1:length(matching_row)){
+  tryimp[["ximp"]][["cohortName"]][matching_row[[i]]]<-paste0(tryimp[["ximp"]][["cohortName"]][matching_row[[i]]], "_imp")
+}
+
+tryimp[["ximp"]]<-tryimp[["ximp"]]%>%relocate("sampleID", .before = "cohortName" ) 
+testPCAimp<-PCA(data=tryimp[["ximp"]][,8:33])
+
+#recalc PC1 and PC2 with imputed data
+
+ellipsedfimp<-cbind(testPCAimp[["data"]][["scores"]][,1:2], 
+                    as.character(tryimp[["ximp"]][["cohortName"]]), 
+                    as.character(tryimp[["ximp"]][["sampleID"]]))
+
+ellipsedfimp <- as.data.frame(ellipsedfimp)
+
+columns_to_convert <- c("PC1", "PC2")
+
+# Loop over the specified columns and convert them to numeric
+for (col_name in columns_to_convert) {
+  ellipsedfimp[[col_name]] <- as.numeric(ellipsedfimp[[col_name]])
+}
+
+subset_df <- ellipsedfimp[grepl("_imp", ellipsedfimp$V3), ]
+
+
+##BIOG
+      n <- length(which(ellipsedf$V3 =="BIOG"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseBIOG <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "yellow")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC2"]) * hotFisN)
+
+      insideOutBIOG <- ((subset_df[which(subset_df$V3 =="BIOG_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "BIOG_imp"),"PC2"]^2)/(ry^2))
+
+##HEID
+      n <- length(which(ellipsedf$V3 =="HEID"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHEID <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "green")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC2"]) * hotFisN)
+
+      insideOutHEID <- ((subset_df[which(subset_df$V3 =="HEID_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "HEID_imp"),"PC2"]^2)/(ry^2))
+
+##HARV
+      n <- length(which(ellipsedf$V3 =="HARV"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHARV <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "purple")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC2"]) * hotFisN)
+
+      insideOutHARV <- ((subset_df[which(subset_df$V3 =="HARV_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "HARV_imp"),"PC2"]^2)/(ry^2))
+      
+
+##CAM
+      n <- length(which(ellipsedf$V3 =="CAM"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAM <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#0000CC")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC2"]) * hotFisN)
+
+      insideOutCAM <- ((subset_df[which(subset_df$V3 =="CAM_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "CAM_imp"),"PC2"]^2)/(ry^2))
+      
+##CAMFU1
+      n <- length(which(ellipsedf$V3 =="CAMFU1"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAMFU1 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#00AAFF")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC2"]) * hotFisN)
+
+      insideOutCAMFU1 <- ((subset_df[which(subset_df$V3 =="CAMFU1_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "CAMFU1_imp"),"PC2"]^2)/(ry^2))
+
+      
+##CAMFU2
+      n <- length(which(ellipsedf$V3 =="CAMFU2"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAMFU2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#00FFFF")
+        ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC2"]) * hotFisN)
+
+      insideOutCAMFU2 <- ((subset_df[which(subset_df$V3 =="CAMFU2_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "CAMFU2_imp"),"PC2"]^2)/(ry^2))
+   
+
+##PATH
+      n <- length(which(ellipsedf$V3 =="PATH"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipsePATH <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#FFAA00")
+      
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC2"]) * hotFisN)
+
+      insideOutPATH <- ((subset_df[which(subset_df$V3 =="PATH_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "PATH_imp"),"PC2"]^2)/(ry^2))
+      
+##HLTHY
+      n <- length(which(ellipsedf$V3 =="HLTHY"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHLTHY <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#FF0000")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC2"]) * hotFisN)
+
+      insideOutHLTHY <- ((subset_df[which(subset_df$V3 =="HLTHY_imp"),"PC1"]^2)/(rx^2) + (subset_df[which(subset_df$V3 == "HLTHY_imp"),"PC2"]^2)/(ry^2))
+      
+###      
+insideOut <- c(insideOutBIOG, insideOutHEID, insideOutHARV, insideOutCAM, insideOutCAMFU1, insideOutCAMFU2, insideOutPATH, insideOutHLTHY)
+
+sdf<-cbind(subset_df, insideOut)    
+
+imputedOnly<-idx
+      
+idx <- which(sdf$insideOut > 1)
+   
+      
+      gl <-  labs(caption = bquote(paste("Dashed line: Hotelling's T"^{2} ~"ellipse ("* alpha *" ~ ", .(ci), ")")))
+
+#caption_text <- paste0(nrow(test), " samples")
+   
+GroupScores<-  ggplot()+
+        ellipseHARV +
+        ellipseHEID +
+        ellipseBIOG + 
+        ellipseCAMFU2 +
+        ellipseCAMFU1 + 
+        ellipseCAM +
+        ellipsePATH +
+        ellipseHLTHY +
+      gl +
+        geom_point(data = subset_df[-idx,], aes(x= PC1, y=PC2, color = V3), size = 0.3, alpha = 0.4) + 
+        geom_point(data = subset_df[idx,], aes(x= PC1, y=PC2, color = V3),size =3, shape = 1, fill = "transparent") + 
+    geom_text_repel(data = subset_df[which(subset_df$PC1>10),],
+                        aes(x = PC1,
+                            y = PC2,
+                            label = V4),
+                        size = 3.5,
+                        nudge_x = 10) +
+        geom_text_repel(data = subset_df[which(subset_df$PC2>5.2),],
+                        aes(x = PC1, 
+                            y = PC2,
+                            label = V4),
+                        point.padding = 1,
+                        size = 3.5,
+                        nudge_x = 10) +
+        scale_colour_manual(values = c(
+                               "BIOG_imp" =  "yellow",
+                                "HEID_imp" = "green",
+                               "HARV_imp" = "purple",
+                               "CAM_imp" = "#0000CC",
+                               "CAMFU1_imp" = "#00AAFF",
+                               "CAMFU2_imp" = "#00FFFF",
+                               "PATH_imp" = "#FFAA00",
+                               "HLTHY_imp"= "#FF0000")) + 
+        theme_bw() +
+        labs(x = paste0("PC1 (",round(testPCAimp[["data"]][["pcSum"]][["Proportion of Variance"]][1], 1), "%)"),
+             y = paste0("PC2 (",round(testPCAimp[["data"]][["pcSum"]][["Proportion of Variance"]][2], 1), "%)"),
+             title = "Group",
+             color = "Cohort")+ 
+  theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold"))
+  
+GroupLoadings<-plotLoadings(model = testPCAimp, optns=list(PCi=1, PCj=2, plotTitle = "Group", theme = theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold")))) 
+               
+```
+#Cumulative Imputation (without recalculation)
+```{r}
+
+# #PC1 and PC2 with complete cases only 
+# test<- na.omit(df[,c(2,8:33)])
+# test <- merge(df[1:7], test, by="sampleID")
+# testPCA<-PCA(data=test[,8:33])
+# 
+# 
+# ellipsedf<-cbind(testPCA[["data"]][["scores"]][,1:2], as.character(test$cohortName))
+# ellipsedf <- as.data.frame(ellipsedf)
+# #ellipsedf[,"PC1"]
+
+#IMPUTE
+# df[sapply(df, is.character)] <- lapply(df[sapply(df, is.character)], as.factor)
+
+tryimp_2<-missForest(xmis= df[ which(df$cohortName =="BIOG"), !names(df) %in% c("sampleID")])
+
+tryimp_2_BIOG<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+tryimp_2<- rbind(tryimp_2[["ximp"]], df[ which(df$cohortName =="HEID"), !names(df) %in% c("sampleID")])
+
+tryimp_2<-missForest(xmis= tryimp_2)
+
+tryimp_2_BIOG_HEID<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_HEID_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+tryimp_2<- rbind(tryimp_2[["ximp"]], df[ which(df$cohortName =="HARV"), !names(df) %in% c("sampleID")])
+
+tryimp_2<-missForest(xmis= tryimp_2)
+
+tryimp_2_BIOG_HEID_HARV<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_HEID_HARV_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+tryimp_2<- rbind(tryimp_2[["ximp"]], df[ which(df$cohortName =="CAM"), !names(df) %in% c("sampleID")])
+
+tryimp_2<-missForest(xmis= tryimp_2)
+
+tryimp_2_BIOG_HEID_HARV_CAM<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_HEID_HARV_CAM_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+tryimp_2<- rbind(tryimp_2[["ximp"]], df[ which(df$cohortName =="CAMFU1"), !names(df) %in% c("sampleID")])
+
+tryimp_2<-missForest(xmis= tryimp_2)
+
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+tryimp_2<- rbind(tryimp_2[["ximp"]], df[ which(df$cohortName =="CAMFU2"), !names(df) %in% c("sampleID")])
+
+tryimp_2<-missForest(xmis= tryimp_2)
+
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+tryimp_2<- rbind(tryimp_2[["ximp"]], df[ which(df$cohortName =="PATH"), !names(df) %in% c("sampleID")])
+
+tryimp_2<-missForest(xmis= tryimp_2)
+
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+tryimp_2<- rbind(tryimp_2[["ximp"]], df[ which(df$cohortName =="HLTHY"), !names(df) %in% c("sampleID")])
+
+tryimp_2<-missForest(xmis= tryimp_2)
+
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH_HLTHY<-tryimp_2[["ximp"]]
+tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH_HLTHY_NRMSE<-tryimp_2[["OOBerror"]][["NRMSE"]]
+
+col_names <-colnames(tryimp_2[["ximp"]])
+
+idx_2<- as.data.frame(which(is.na(df[, !names(df) %in% "sampleID"]), arr.ind=TRUE))
+
+#make empty list to fill with original and imputed
+idx_2$imputed<-idx_2$sampleID<- idx_2$variable<-NA
+
+  
+  #fill original column
+  idx_2$sampleID<-df[idx_2$row,"sampleID"]
+  
+  for(i in 1:nrow(idx_2)){
+    #fill imputed column
+   idx_2$imputed[i]<-tryimp_2[["ximp"]][idx_2$row[i],idx_2$col[i]]
+   #fill variable column
+   idx_2$variable[i] <-col_names[idx_2$col[i]]
+   
+  }
+#tryimp[["ximp"]][["cohortName"]] <-df$cohortName
+tryimp_2[["ximp"]][["sampleID"]]<- as.character(df$sampleID)
+tryimp_2[["ximp"]][["cohortName"]] <- as.character(tryimp_2[["ximp"]][["cohortName"]])
+
+
+  #change the cohort name label of those imputed
+matching_row <-list()
+ for (i in 1:nrow(idx_2)) {
+  matching_row[i] <- which(tryimp_2[["ximp"]][["sampleID"]] == idx_2$sampleID[i])
+ }
+
+matching_row<-unique(matching_row)
+
+for(i in 1:length(matching_row)){
+  tryimp_2[["ximp"]][["cohortName"]][matching_row[[i]]]<-paste0(tryimp_2[["ximp"]][["cohortName"]][matching_row[[i]]], "_imp")
+}
+
+tryimp_2[["ximp"]]<-tryimp_2[["ximp"]]%>%relocate("sampleID", .before = "cohortName" ) 
+
+
+#recalc PC1 and PC2 with imputed data
+testPCAimp_2<-PCA(data=tryimp_2[["ximp"]][,8:33])
+
+ellipsedfimp_2<-cbind(testPCAimp_2[["data"]][["scores"]][,1:2], 
+                      as.character(tryimp_2[["ximp"]][["cohortName"]]), 
+                      as.character(tryimp[["ximp"]][["sampleID"]]))
+
+ellipsedfimp_2 <- as.data.frame(ellipsedfimp_2)
+
+columns_to_convert <- c("PC1", "PC2")
+
+# Loop over the specified columns and convert them to numeric
+for (col_name in columns_to_convert) {
+  ellipsedfimp_2[[col_name]] <- as.numeric(ellipsedfimp_2[[col_name]])
+}
+
+subset_df_2 <- ellipsedfimp_2[grepl("_imp", ellipsedfimp_2$V3), ]
+
+
+##BIOG
+      n <- length(which(ellipsedf$V3 =="BIOG"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseBIOG_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "yellow")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC2"]) * hotFisN)
+
+      insideOutBIOG_2 <- ((subset_df_2[which(subset_df_2$V3 =="BIOG_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "BIOG_imp"),"PC2"]^2)/(ry^2))
+
+##HEID
+      n <- length(which(ellipsedf$V3 =="HEID"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHEID_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "green")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC2"]) * hotFisN)
+
+      insideOutHEID_2 <- ((subset_df_2[which(subset_df_2$V3 =="HEID_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "HEID_imp"),"PC2"]^2)/(ry^2))
+
+##HARV
+      n <- length(which(ellipsedf$V3 =="HARV"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHARV_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "purple")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC2"]) * hotFisN)
+
+      insideOutHARV_2 <- ((subset_df_2[which(subset_df_2$V3 =="HARV_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "HARV_imp"),"PC2"]^2)/(ry^2))
+      
+
+##CAM
+      n <- length(which(ellipsedf$V3 =="CAM"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAM_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#0000CC")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC2"]) * hotFisN)
+
+      insideOutCAM_2 <- ((subset_df_2[which(subset_df_2$V3 =="CAM_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "CAM_imp"),"PC2"]^2)/(ry^2))
+      
+##CAMFU1
+      n <- length(which(ellipsedf$V3 =="CAMFU1"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAMFU1_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#00AAFF")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC2"]) * hotFisN)
+
+      insideOutCAMFU1_2 <- ((subset_df_2[which(subset_df_2$V3 =="CAMFU1_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "CAMFU1_imp"),"PC2"]^2)/(ry^2))
+
+      
+##CAMFU2
+      n <- length(which(ellipsedf$V3 =="CAMFU2"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAMFU2_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#00FFFF")
+        ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC2"]) * hotFisN)
+
+      insideOutCAMFU2_2 <- ((subset_df_2[which(subset_df_2$V3 =="CAMFU2_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "CAMFU2_imp"),"PC2"]^2)/(ry^2))
+   
+
+##PATH
+      n <- length(which(ellipsedf$V3 =="PATH"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipsePATH_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#FFAA00")
+      
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC2"]) * hotFisN)
+
+      insideOutPATH_2 <- ((subset_df_2[which(subset_df_2$V3 =="PATH_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "PATH_imp"),"PC2"]^2)/(ry^2))
+      
+##HLTHY
+      n <- length(which(ellipsedf$V3 =="HLTHY"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHLTHY_2 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#FF0000")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC2"]) * hotFisN)
+
+      insideOutHLTHY_2 <- ((subset_df_2[which(subset_df_2$V3 =="HLTHY_imp"),"PC1"]^2)/(rx^2) + (subset_df_2[which(subset_df_2$V3 == "HLTHY_imp"),"PC2"]^2)/(ry^2))
+      
+###      
+insideOut_2 <- c(insideOutBIOG_2, insideOutHEID_2, insideOutHARV_2, insideOutCAM_2, insideOutCAMFU1_2, insideOutCAMFU2_2, insideOutPATH_2, insideOutHLTHY_2)
+
+sdf_2<-cbind(subset_df_2, insideOut_2) 
+
+imputedOnly_2<-idx_2
+      
+idx_2 <- which(sdf_2$insideOut_2 > 1)
+      
+      
+      gl <-  labs(caption = bquote(paste("Dashed line: Hotelling's T"^{2} ~"ellipse ("* alpha *" ~ ", .(ci), ")")))
+
+#caption_text <- paste0(nrow(test), " samples")
+   
+CumulativeScores<-ggplot()+
+        ellipseHARV_2 +
+        ellipseHEID_2 +
+        ellipseBIOG_2 + 
+        ellipseCAMFU2_2 +
+        ellipseCAMFU1_2 + 
+        ellipseCAM_2 +
+        ellipsePATH_2 +
+        ellipseHLTHY_2 +
+      gl +
+        geom_point(data = subset_df_2[-idx_2,], aes(x= PC1, y=PC2, color = V3), size = 0.3, alpha = 0.4) + 
+        geom_point(data = subset_df_2[idx_2,], aes(x= PC1, y=PC2, color = V3),size =3, shape = 1, fill = "transparent") + 
+  geom_text_repel(data = subset_df_2[which(subset_df_2$PC1>10),],
+                        aes(x = PC1,
+                            y = PC2,
+                            label = V4),
+                        size = 3.5,
+                        nudge_x = 10) +
+        geom_text_repel(data = subset_df_2[which(subset_df_2$PC2>5.2),],
+                        aes(x = PC1, 
+                            y = PC2,
+                            label = V4),
+                        point.padding = 1,
+                        size = 3.5,
+                        nudge_x = 10) +
+        scale_colour_manual(values = c(
+                               "BIOG_imp" =  "yellow",
+                                "HEID_imp" = "green",
+                               "HARV_imp" = "purple",
+                               "CAM_imp" = "#0000CC",
+                               "CAMFU1_imp" = "#00AAFF",
+                               "CAMFU2_imp" = "#00FFFF",
+                               "PATH_imp" = "#FFAA00",
+                               "HLTHY_imp"= "#FF0000")) + 
+        theme_bw() +
+        labs(x = paste0("PC1 (",round(testPCAimp_2[["data"]][["pcSum"]][["Proportion of Variance"]][1], 1), "%)"),
+             y = paste0("PC2 (",round(testPCAimp_2[["data"]][["pcSum"]][["Proportion of Variance"]][2], 1), "%)"), 
+             title = "Cumulative",
+             color = "Cohort") +
+   theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold"))
+
+CumulativeLoadings<-plotLoadings(model = testPCAimp_2, optns=list(PCi=1, PCj=2, plotTitle = "Cumulative", theme =  theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold")))) 
+        
+```
+
+#Individual Imputation
+```{r}
+
+# #PC1 and PC2 with complete cases only 
+# test<- na.omit(df[,c(2,8:33)])
+# test <- merge(df[1:7], test, by="sampleID")
+# testPCA<-PCA(data=test[,8:33])
+# 
+# 
+# ellipsedf<-cbind(testPCA[["data"]][["scores"]][,1:2], as.character(test$cohortName))
+# ellipsedf <- as.data.frame(ellipsedf)
+# #ellipsedf[,"PC1"]
+
+#IMPUTE
+# df[sapply(df, is.character)] <- lapply(df[sapply(df, is.character)], as.factor)
+
+tryimp_3_BIOG<-missForest(xmis= df[ which(df$cohortName =="BIOG"), !names(df) %in% c("sampleID")])
+
+tryimp_3_HEID<-missForest(xmis= df[ which(df$cohortName =="HEID"), !names(df) %in% c("sampleID")])
+
+tryimp_3_HARV<-missForest(xmis= df[ which(df$cohortName =="HARV"), !names(df) %in% c("sampleID")])
+
+tryimp_3_CAM<-missForest(xmis= df[ which(df$cohortName =="CAM"), !names(df) %in% c("sampleID")])
+
+tryimp_3_CAMFU1<-missForest(xmis= df[ which(df$cohortName =="CAMFU1"), !names(df) %in% c("sampleID")])
+
+tryimp_3_CAMFU2<-missForest(xmis= df[ which(df$cohortName =="CAMFU2"), !names(df) %in% c("sampleID")])
+
+tryimp_3_PATH<-missForest(xmis= df[ which(df$cohortName =="PATH"), !names(df) %in% c("sampleID")])
+
+tryimp_3_HLTHY<-missForest(xmis= df[ which(df$cohortName =="HLTHY"), !names(df) %in% c("sampleID")])
+
+###HLTHY not included as age and gender cannot be imputed (they are completely missing in HLTHY so when imputed alone, there is nothing to base it on (not using other cohorts that do have age))
+
+tryimp_3 <- rbind(tryimp_3_BIOG[["ximp"]] , tryimp_3_HEID[["ximp"]], tryimp_3_HARV[["ximp"]], tryimp_3_CAM[["ximp"]], tryimp_3_CAMFU1[["ximp"]], tryimp_3_CAMFU2[["ximp"]], tryimp_3_PATH[["ximp"]], tryimp_3_HLTHY[["ximp"]])
+
+
+col_names <-colnames(tryimp_3)
+
+#df2 <- df[df$cohortName != "HLTHY", ]
+
+idx_3<- as.data.frame(which(is.na(df[, !names(df) %in% "sampleID"]), arr.ind=TRUE))
+
+#make empty list to fill with original and imputed
+idx_3$imputed<-idx_3$sampleID<- idx_3$variable<-NA
+
+  
+  #fill original column
+  idx_3$sampleID<-df[idx_3$row,"sampleID"]
+  
+  for(i in 1:nrow(idx_3)){
+    #fill imputed column
+   idx_3$imputed[i]<-tryimp_3[idx_3$row[i],idx_3$col[i]]
+   #fill variable column
+   idx_3$variable[i] <-col_names[idx_3$col[i]]
+   
+  }
+#tryimp[["ximp"]][["cohortName"]] <-df$cohortName
+tryimp_3$sampleID<- as.character(df$sampleID)
+tryimp_3$cohortName <- as.character(tryimp_3$cohortName)
+
+
+  #change the cohort name label of those imputed
+matching_row <-list()
+ for (i in 1:nrow(idx_3)) {
+  matching_row[i] <- which(tryimp_3$sampleID == idx_3$sampleID[i])
+ }
+
+matching_row<-unique(matching_row)
+
+for(i in 1:length(matching_row)){
+  tryimp_3$cohortName[matching_row[[i]]]<-paste0(tryimp_3$cohortName[matching_row[[i]]], "_imp")
+}
+
+tryimp_3<-tryimp_3%>%relocate("sampleID", .before = "cohortName" ) 
+
+
+#recalc PC1 and PC2 with imputed data
+testPCAimp_3<-PCA(data=tryimp_3[,8:33])
+
+ellipsedfimp_3<-cbind(testPCAimp_3[["data"]][["scores"]][,1:2], 
+                      as.character(tryimp_3$cohortName), 
+                      as.character(tryimp[["ximp"]][["sampleID"]]))
+ellipsedfimp_3 <- as.data.frame(ellipsedfimp_3)
+
+columns_to_convert <- c("PC1", "PC2")
+
+# Loop over the specified columns and convert them to numeric
+for (col_name in columns_to_convert) {
+  ellipsedfimp_3[[col_name]] <- as.numeric(ellipsedfimp_3[[col_name]])
+}
+
+subset_df_3 <- ellipsedfimp_3[grepl("_imp", ellipsedfimp_3$V3), ]
+
+
+##BIOG
+      n <- length(which(ellipsedf$V3 =="BIOG"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseBIOG_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "yellow")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="BIOG"),"PC2"]) * hotFisN)
+
+      insideOutBIOG_3 <- ((subset_df_3[which(subset_df_3$V3 =="BIOG_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "BIOG_imp"),"PC2"]^2)/(ry^2))
+
+##HEID
+      n <- length(which(ellipsedf$V3 =="HEID"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHEID_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "green")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HEID"),"PC2"]) * hotFisN)
+
+      insideOutHEID_3 <- ((subset_df_3[which(subset_df_3$V3 =="HEID_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "HEID_imp"),"PC2"]^2)/(ry^2))
+
+##HARV
+      n <- length(which(ellipsedf$V3 =="HARV"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHARV_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "purple")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HARV"),"PC2"]) * hotFisN)
+
+      insideOutHARV_3 <- ((subset_df_3[which(subset_df_3$V3 =="HARV_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "HARV_imp"),"PC2"]^2)/(ry^2))
+      
+
+##CAM
+      n <- length(which(ellipsedf$V3 =="CAM"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAM_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#0000CC")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAM"),"PC2"]) * hotFisN)
+
+      insideOutCAM_3 <- ((subset_df_3[which(subset_df_3$V3 =="CAM_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "CAM_imp"),"PC2"]^2)/(ry^2))
+      
+##CAMFU1
+      n <- length(which(ellipsedf$V3 =="CAMFU1"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAMFU1_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#00AAFF")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU1"),"PC2"]) * hotFisN)
+
+      insideOutCAMFU1_3 <- ((subset_df_3[which(subset_df_3$V3 =="CAMFU1_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "CAMFU1_imp"),"PC2"]^2)/(ry^2))
+
+      
+##CAMFU2
+      n <- length(which(ellipsedf$V3 =="CAMFU2"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseCAMFU2_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#00FFFF")
+        ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="CAMFU2"),"PC2"]) * hotFisN)
+
+      insideOutCAMFU2_3 <- ((subset_df_3[which(subset_df_3$V3 =="CAMFU2_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "CAMFU2_imp"),"PC2"]^2)/(ry^2))
+   
+
+##PATH
+      n <- length(which(ellipsedf$V3 =="PATH"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipsePATH_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#FFAA00")
+      
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="PATH"),"PC2"]) * hotFisN)
+
+      insideOutPATH_3 <- ((subset_df_3[which(subset_df_3$V3 =="PATH_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "PATH_imp"),"PC2"]^2)/(ry^2))
+      
+##HLTHY
+      n <- length(which(ellipsedf$V3 =="HLTHY"))
+      ci <- 0.95
+      
+      hotFisN <- (n - 1) * 2 * (n^2 - 1) / (n^2 * (n - 2)) * qf(ci, 2, n - 2)
+
+      ellipseHLTHY_3 <- gg_circle(rx = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC1"]) * hotFisN),
+                           ry = sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC2"]) * hotFisN),
+                           xc = 0,
+                           yc = 0,
+                           color = "#FF0000")
+      ####for outliers
+      rx <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC1"]) * hotFisN)
+      ry <- sqrt(var(ellipsedf[which(ellipsedf$V3 =="HLTHY"),"PC2"]) * hotFisN)
+
+      insideOutHLTHY_3 <- ((subset_df_3[which(subset_df_3$V3 =="HLTHY_imp"),"PC1"]^2)/(rx^2) + (subset_df_3[which(subset_df_3$V3 == "HLTHY_imp"),"PC2"]^2)/(ry^2))
+      
+###      
+insideOut_3 <- c(insideOutBIOG_3, insideOutHEID_3, insideOutHARV_3, insideOutCAM_3, insideOutCAMFU1_3, insideOutCAMFU2_3, insideOutPATH_3, insideOutHLTHY_3)
+
+sdf_3<-cbind(subset_df_3, insideOut_3)     
+
+imputedOnly_3<-idx_3
+      
+idx_3 <- which(sdf_3$insideOut_3 > 1)
+      
+      
+      gl <-  labs(caption = bquote(paste("Dashed line: Hotelling's T"^{2} ~"ellipse ("* alpha *" ~ ", .(ci), ")")))
+   
+IndividualScores <-
+  ggplot()+
+        ellipseHARV_3 +
+        ellipseHEID_3 +
+        ellipseBIOG_3 + 
+        ellipseCAMFU2_3 +
+        ellipseCAMFU1_3 + 
+        ellipseCAM_3 +
+        ellipsePATH_3 +
+        ellipseHLTHY_3 +
+      gl +
+        geom_point(data = subset_df_3[-idx_3,], aes(x= PC1, y=PC2, color = V3), size = 0.3, alpha = 0.4) + 
+        geom_point(data = subset_df_3[idx_3,], aes(x= PC1, y=PC2, color = V3),size =3, shape = 1, fill = "transparent") + 
+        geom_text_repel(data = subset_df_3[which(subset_df_3$PC1>10),],
+                        aes(x = PC1,
+                            y = PC2,
+                            label = V4),
+                        size = 3.5,
+                        nudge_x = 10) +
+        geom_text_repel(data = subset_df_3[which(subset_df_3$PC2>5.2),],
+                        aes(x = PC1, 
+                            y = PC2,
+                            label = V4),
+                        point.padding = 1,
+                        size = 3.5,
+                        nudge_x = 10) +
+        scale_colour_manual(values = c(
+                               "BIOG_imp" =  "yellow",
+                                "HEID_imp" = "green",
+                               "HARV_imp" = "purple",
+                               "CAM_imp" = "#0000CC",
+                               "CAMFU1_imp" = "#00AAFF",
+                               "CAMFU2_imp" = "#00FFFF",
+                               "PATH_imp" = "#FFAA00",
+                               "HLTHY_imp"= "#FF0000")) + 
+        theme_bw() +
+        labs(x = paste0("PC1 (",round(testPCAimp_3[["data"]][["pcSum"]][["Proportion of Variance"]][1], 1), "%)"),
+             y = paste0("PC2 (",round(testPCAimp_3[["data"]][["pcSum"]][["Proportion of Variance"]][2], 1), "%)"), 
+             title = "Individual",
+             color = "Cohort") +
+   theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold"))
+
+IndividualLoadings<-plotLoadings(model = testPCAimp_3, optns=list(PCi=1, PCj=2, plotTitle = "Individual", theme =  theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold"))))
+  
+        
+```
+#Complete Cases Scores Plot
+```{r}
+dfComplete<- na.omit(df[,c(1,2,8:33)])
+CompleteCasesScores<-
+  plotScores(model = testPCA
+              , 
+                         optns = list(theme = theme(plot.title = element_text(hjust = 0.5,
+                                                                              size = 16,           
+                                                                              face = "bold")),
+                                      PCi = 1, 
+                                      PCj = 2,
+                                      plotTitle = "Complete Cases",
+                                      color = dfComplete$cohortName,
+                                      size = 1,
+                                      alpha = 0.5,
+                                     discretePalette = c(
+                                       "BIOG" =  "yellow",
+                                       "HEID" = "green",
+                                       "HARV" = "purple",
+                                       "CAM" = "#0000CC",
+                                       "CAMFU1" = "#00AAFF",
+                                       "CAMFU2" = "#00FFFF",
+                                       "PATH" = "#FFAA00",
+                                       "HLTHY" = "#FF0000"
+                                     )
+             )
+             )
+CompleteCasesScores
+
+CompleteCasesLoadings<- plotLoadings(model = testPCA, 
+             optns=list(PCi=1, 
+                        PCj=2, 
+                        plotTitle = "Complete Cases", 
+                        theme = theme(plot.title = element_text(hjust = 0.5,
+                                                                size = 16,           
+                                                                face = "bold")))) 
+
+
+ellipsedf$V3<- as.character(ellipsedf$V3)
+ellipsedf$PC1<- as.numeric(ellipsedf$PC1)
+ellipsedf$PC2<- as.numeric(ellipsedf$PC2)
+
+
+CompleteCasesScores<-  ggplot()+
+        ellipseHARV_3 +
+        ellipseHEID_3 +
+        ellipseBIOG_3 + 
+        ellipseCAMFU2_3 +
+        ellipseCAMFU1_3 + 
+        ellipseCAM_3 +
+        ellipsePATH_3 +
+        ellipseHLTHY_3 +
+      gl +
+   geom_point(data = ellipsedf, aes(x= PC1, y=PC2, color = V3), size =2, alpha = 1, shape = 4) + 
+        scale_colour_manual(values = c(
+                               "BIOG" =  "yellow",
+                                "HEID" = "green",
+                               "HARV" = "purple",
+                               "CAM" = "#0000CC",
+                               "CAMFU1" = "#00AAFF",
+                               "CAMFU2" = "#00FFFF",
+                               "PATH" = "#FFAA00",
+                               "HLTHY"= "#FF0000")) +
+        theme_bw() +
+        labs(x = paste0("PC1 (",round(testPCA[["data"]][["pcSum"]][["Proportion of Variance"]][1], 1), "%)"),
+             y = paste0("PC2 (",round(testPCA[["data"]][["pcSum"]][["Proportion of Variance"]][2], 1), "%)"),
+             title = "Complete Cases",
+             color = "Cohort")+
+   theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold"))
+
+CompleteCasesLoadings<-plotLoadings(model = testPCA, optns=list(PCi=1, PCj=2, plotTitle = "Complete Cases", theme =  theme(plot.title = element_text(hjust = 0.5,
+                                  size = 16,           
+                                  face = "bold"))))
+
+```
+
+#legend for score figure
+```{r}
+
+Status <- rep(c("Imputed In", "Original", "Imputed Out"), length.out = nrow(ellipsedf))
+ forLegend<- cbind(ellipsedf, Status)
+colnames(forLegend)[colnames(forLegend) == "V3"] <- "Cohort"
+forLegend$Status <- factor(forLegend$Status)
+
+legendPlot<- ggplot(data=forLegend, aes(x=PC1, y=PC2, color=Cohort, shape = Status, size = Status)) +
+  geom_point()+
+  scale_shape_manual(values = c("Imputed In" = 19, "Original" = 4, "Imputed Out" = 1))+ 
+  scale_size_manual(values = c("Imputed In" = 1, "Original" = 2, "Imputed Out" = 3)) +
+  scale_colour_manual(values = c(
+                               "BIOG" =  "yellow",
+                                "HEID" = "green",
+                               "HARV" = "purple",
+                               "CAM" = "#0000CC",
+                               "CAMFU1" = "#00AAFF",
+                               "CAMFU2" = "#00FFFF",
+                               "PATH" = "#FFAA00",
+                               "HLTHY"= "#FF0000")) + 
+  theme_bw() +
+  guides(color = guide_legend(override.aes = list(size = 4),  ncol=8, order = 1),
+         
+         ) +
+  theme(legend.position="bottom", legend.box="vertical", legend.margin=margin()) 
+ 
+legend_grob <- cowplot::get_legend(legendPlot)
+
+# Save the legend
+ggsave("ScoresLegend.svg", plot = legend_grob)
+
+```
+#Figures
+```{r, warning=FALSE}
+legend <-get_legend(CumulativeScores)
+
+loadingsFigure<-ggarrange(plots=list(CompleteCasesLoadings, GroupLoadings, CumulativeLoadings, IndividualLoadings), nrow = 2) 
+
+
+
+scoresFigureOutliersLabeled <- ggarrange(plots=list(CompleteCasesScores + 
+                                       theme(legend.position = "none", 
+                                             plot.caption = element_blank()) , 
+                                     GroupScores + 
+                                       theme(legend.position = "none", 
+                                             plot.caption = element_blank()), 
+                                     CumulativeScores + 
+                                       theme(legend.position = "none", 
+                                             plot.caption = element_blank()), 
+                                     IndividualScores + 
+                                       theme(legend.position = "none", 
+                                             )), nrow = 2)
+
+ggsave("scoresFigureOutliersLabeled.svg", plot = scoresFigureOutliersLabeled)
+
+ggsave("loadingsFigure.svg", plot = loadingsFigure)
+```
+#Imputed scores outliers
+```{r}
+#Harvard outlier 
+#Appears to be a very ill child, at the top of the range for all non-imputed amino acids. 
+
+which(testPCAimp_3[["data"]][["pcdf"]][["PC1"]]>40)
+
+df[1088, "sampleID"]
+
+df[1088, "cohortName"]
+
+df[1088,]
+
+groupOutliers<-sdf[which(sdf$insideOut>1), ]
+cumulativeOutliers<-sdf_2[which(sdf_2$insideOut>1), ]
+individualOutliers<-sdf_3[which(sdf_3$insideOut>1), ]
+
+out<-full_join(groupOutliers, cumulativeOutliers, by="V4")
+out<-full_join(out, individualOutliers, by="V4")
+
+outliers<-out %>% select(V4, V3.x, insideOut, insideOut_2, insideOut_3)
+which(sdf$V4 =="COV09732") 
+sdf[137, "V3"]
+outliers[which(outliers$V4 =="COV09732") ,"V3.x"]<-"HEID_imp"
+
+which(sdf$V4 =="COV05100") 
+sdf[198, "V3"]
+outliers[which(outliers$V4 =="COV05100") ,"V3.x"]<-"HARV_imp"
+
+outliers[,3:5]<-round(outliers[,3:5],2)
+
+colnames(outliers) <-c("sampleID", "Cohort", "Group", "Cumulative", "Individual")
+outlierTable <- kableExtra::kable(x = outliers, align = 'c') %>%
+  column_spec(column = c(1:5), width = "2cm")%>%
+  row_spec(c(12, 18, 20, 32), background = "yellow")
+
+ggsave("outlierTable.svg", plot = outlierTable)
+```
+#outlier Boxplots
+```{r}
+m <-tryimp[["ximp"]]
+m <- m[grepl("HARV", m$cohortName), ]
+idCOV05008<-which(m$sampleID == "COV05008")
+idCOV05028<-which(m$sampleID == "COV05028")
+mlabels<-colnames(m)
+
+boxHARV<-list()
+
+for(i in 8:33){
+id1<-m[idCOV05008,i]
+id2<-m[idCOV05028,i]
+ boxHARV[[i]] <- ggplot(m, aes(y = m[,i])) +
+              geom_boxplot() +
+              geom_hline(yintercept = id1, color = "purple")+
+              geom_hline(yintercept = id2, color = "purple")+
+   labs(y= mlabels[i])
+}
+
+
+h1 <- ggarrange(plots = list(boxHARV[[8]], boxHARV[[9]], boxHARV[[10]], boxHARV[[11]]))
+h2 <- ggarrange(plots = list(boxHARV[[12]], boxHARV[[13]], boxHARV[[14]], boxHARV[[15]])) 
+h3 <- ggarrange(plots = list(boxHARV[[16]], boxHARV[[17]], boxHARV[[18]], boxHARV[[19]]))
+h4 <- ggarrange(plots = list(boxHARV[[20]], boxHARV[[21]], boxHARV[[22]], boxHARV[[23]]))
+h5 <- ggarrange(plots = list(boxHARV[[24]], boxHARV[[25]], boxHARV[[26]], boxHARV[[27]])) 
+h6 <- ggarrange(plots = list(boxHARV[[28]], boxHARV[[29]], boxHARV[[30]], boxHARV[[31]]))
+h7 <- ggarrange(plots = list(boxHARV[[32]],boxHARV[[33]]), ncol=2)
+
+
+
+
+m <-tryimp[["ximp"]]
+m <- m[grepl("CAM", m$cohortName), ]
+idCOV00563<-which(m$sampleID == "COV00563")
+idCOV00765<-which(m$sampleID == "COV00765")
+idCOV00404<-which(m$sampleID == "COV00404")
+mlabels<-colnames(m)
+
+boxCAM<-list()
+
+for(i in 8:33){
+id1<-m[idCOV00563,i]
+id2<-m[idCOV00765,i]
+id3<-m[idCOV00404,i]
+ boxCAM[[i]] <- ggplot(m, aes(y = m[,i])) +
+              geom_boxplot() +
+              geom_hline(yintercept = id1, color = "#0000CC")+
+              geom_hline(yintercept = id2, color = "green")+
+              geom_hline(yintercept = id3, color = "red")+
+   labs(y= mlabels[i])
+}
+
+c1 <- ggarrange(plots = list(boxCAM[[8]], boxCAM[[9]], boxCAM[[10]], boxCAM[[11]]))
+c2 <- ggarrange(plots = list(boxCAM[[12]], boxCAM[[13]], boxCAM[[14]], boxCAM[[15]])) 
+c3 <- ggarrange(plots = list(boxCAM[[16]], boxCAM[[17]], boxCAM[[18]], boxCAM[[19]]))
+c4 <- ggarrange(plots = list(boxCAM[[20]], boxCAM[[21]], boxCAM[[22]], boxCAM[[23]]))
+c5 <- ggarrange(plots = list(boxCAM[[24]], boxCAM[[25]], boxCAM[[26]], boxCAM[[27]])) 
+c6 <- ggarrange(plots = list(boxCAM[[28]], boxCAM[[29]], boxCAM[[30]], boxCAM[[31]]))
+c7 <- ggarrange(plots = list(boxCAM[[32]],boxCAM[[33]]), ncol=2)
+```
+
+
+#Cohort missingness table
+```{r}
+
+kable(x =(colSums(is.na(df[,7:32])))/nrow(df) *100)
+
+`Missing%` <-  (colSums(is.na(df[7:32]))/nrow(df) *100)
+
+missingper<-(formatC(signif(`Missing%`, digits=3), digits=3, format="fg", flag="#"))
+Missing <- colSums(is.na(df[7:32]))
+missTable<- cbind(missingper, Missing)
+ 
+colnames(missTable) <- c("Percentage", "Number")
+kable(missTable)
+
+
+library(knitr)
+library(svglite)
+
+# Create a kable table (replace this with your kable object)
+my_kable_table <- kable(missTable)
+
+# Specify the path to save the SVG file
+svg_file_path <- "table.svg"
+
+# Create an SVG graphics device
+svg_device <- svglite(svg_file_path)
+
+# Print the kable table to the SVG device
+print(my_kable_table, format = "html", include = FALSE)
+
+
+```
+
+#RDA for reika
+
+```{r}
+completeCases<-test
+
+save(df,
+     completeCases,
+     tryimp,
+     tryimp_2_BIOG,
+      tryimp_2_BIOG_HEID,
+      tryimp_2_BIOG_HEID_HARV,
+      tryimp_2_BIOG_HEID_HARV_CAM,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH_HLTHY,
+     tryimp_2_BIOG_NRMSE,
+      tryimp_2_BIOG_HEID_NRMSE,
+      tryimp_2_BIOG_HEID_HARV_NRMSE,
+      tryimp_2_BIOG_HEID_HARV_CAM_NRMSE,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_NRMSE,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_NRMSE,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH_NRMSE,
+      tryimp_2_BIOG_HEID_HARV_CAM_CAMFU1_CAMFU2_PATH_HLTHY_NRMSE,
+     tryimp_3_BIOG, 
+     tryimp_3_HEID,
+     tryimp_3_HARV,
+     tryimp_3_CAM,
+     tryimp_3_CAMFU1,
+     tryimp_3_CAMFU2,
+     tryimp_3_PATH, 
+     tryimp_3_HLTHY,
+     file = "AAmissforestV2.RData")
+```
+
+
+<!-- #create but leave nas -->
+<!-- ```{r} -->
+<!-- listdf<- list(BIOG = BIOG, -->
+<!--               HEID = HEID, -->
+<!--               HARV = HARV, -->
+<!--               CAM = CAM, -->
+<!--               CAMFU1 = CAMFU1, -->
+<!--               CAMFU2 = CAMFU2, -->
+<!--               PATH = PATH,  -->
+<!--               HLTHY = HLTHY) -->
+<!-- for(i in 1:length(listdf)){ -->
+<!--   #which_names <- which(names(listdf[[i]]) %in% names_to_select) -->
+<!-- #listdf[[i]] <- listdf[[i]][which_names] -->
+<!-- listdf[[i]] <- listdf[[i]]%>%relocate("cohortName", .before = "sampleID" )  -->
+
+<!-- #listdf[[i]][sapply(listdf[[i]], is.character)] <- lapply(listdf[[i]][sapply(listdf[[i]], is.character)], as.factor) -->
+<!-- #remove numeric column NAs -->
+<!-- #listdf[[i]]<- merge(listdf[[i]][,1:6],(listdf[[i]][,c(2,7:32)]), by="sampleID") -->
+<!-- } -->
+
+
+
+<!-- ``` -->
+<!-- #impute all nas at once -->
+<!-- ```{r} -->
+<!-- df[sapply(df, is.character)] <- lapply(df[sapply(df, is.character)], as.factor) -->
+<!-- tryimp<-missForest(xmis= df[ , !names(df) %in% c("sampleID")]) -->
+<!-- col_names <-colnames(tryimp[["ximp"]]) -->
+
+<!-- idx<- as.data.frame(which(is.na(df[, !names(df) %in% "sampleID"]), arr.ind=TRUE)) -->
+
+<!-- #make empty list to fill with original and imputed -->
+<!-- idx$imputed<-idx$sampleID<- idx$variable<-NA -->
+
+
+<!--   #fill original column -->
+<!--   idx$sampleID<-df[idx$row,"sampleID"] -->
+
+<!--   for(i in 1:nrow(idx)){ -->
+<!--     #fill imputed column -->
+<!--    idx$imputed[i]<-tryimp[["ximp"]][idx$row[i],idx$col[i]] -->
+<!--    #fill variable column -->
+<!--    idx$variable[i] <-col_names[idx$col[i]] -->
+
+<!--   } -->
+<!-- tryimp[["ximp"]][["cohortName"]] <-df$cohortName -->
+<!-- tryimp[["ximp"]][["sampleID"]]<- as.character(df$sampleID) -->
+<!-- tryimp[["ximp"]][["cohortName"]] <- as.character(tryimp[["ximp"]][["cohortName"]]) -->
+
+
+<!--   #change the cohort name label of those imputed -->
+<!-- matching_row <-list() -->
+<!--  for (i in 1:nrow(idx)) { -->
+<!--   matching_row[i] <- which(tryimp[["ximp"]][["sampleID"]] == idx$sampleID[i]) -->
+<!--  } -->
+
+<!-- matching_row<-unique(matching_row) -->
+
+<!-- for(i in 1:length(matching_row)){ -->
+<!--   tryimp[["ximp"]][["cohortName"]][matching_row[[i]]]<-paste0(tryimp[["ximp"]][["cohortName"]][matching_row[[i]]], "_imp") -->
+<!-- } -->
+
+
+<!--  testPCA <- PCA(data = tryimp[["ximp"]][,6:31])  -->
+<!--  plot<-plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName, PCi=1, PCj=2,  discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+
+<!--  imppc1pc2<-list() -->
+
+<!--  for(i in 1:length(listdf)){ -->
+<!--    for(j in 1:length(listdf)){ -->
+<!--      if(j>i){ -->
+<!--         test<- rbind(listdf[[i]], listdf[[j]]) -->
+<!--         pair_name <- paste0(names(listdf[i]), "vs", names(listdf[j])) -->
+<!--         testPCA<-PCA(data=test[,7:32]) -->
+<!--          plot<-plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName, PCi=1, PCj=2,  discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!--           new_list <- setNames(list(plot), pair_name) -->
+<!--           imppc1pc2 <- append(imppc1pc2, new_list) -->
+<!--      } -->
+<!--    } -->
+<!-- }  -->
+
+<!-- ``` -->
+           
+         
+
+
+
+
+
+<!-- ##all cohorts -->
+<!-- ```{r} -->
+<!-- # dfData<-df[,8:51] -->
+<!-- # dfMeta <- df[,1:7] -->
+<!-- # #which(is.na(dfData$`3-methylhistidine`)) -->
+<!-- #  -->
+<!-- # test<-na.omit(df[,c(2,8:51)]) -->
+<!-- # test<- left_join(test, dfMeta, by= "sampleID") -->
+<!-- # test <-test%>%relocate("sampleID", .before = "cohortName" )  -->
+<!-- # colnames(test[26]) -->
+<!-- #  -->
+<!-- # # remove standards -->
+<!-- #  test <- test[,!grepl("13C", colnames(test))] -->
+<!-- #  test <- test[,!grepl("Tag", colnames(test))] -->
+<!-- #  -->
+<!-- # testPCA<-PCA(data=test[,1:26], rank = 10) -->
+<!-- #  -->
+<!-- # ALLcohorts <-plotScores(model=testPCA, optns=list(alpha = 1, size = 1, color=test$cohortName, discretePalette = c( -->
+<!-- #                                "BIOG" =  "yellow", -->
+<!-- #                                 "HEID" = "green", -->
+<!-- #                                "HARV" = "purple", -->
+<!-- #                                "CAM" = "#0000CC", -->
+<!-- #                                "CAMFU1" = "#00AAFF", -->
+<!-- #                                "CAMFU2" = "#00FFFF", -->
+<!-- #                                "PATH" = "#FFAA00", -->
+<!-- #                                "HLTHY"= "#FF0000"))) -->
+<!-- #                                  -->
+<!-- # # ALLcohorts <-plotScores(model=testPCA, optns=list(color=test$sampleMatrixType)) -->
+<!-- # plotLoadings(model=testPCA, optns=list(PCi=1, PCj=2)) -->
+<!-- # plotScores(model=testPCA, optns=list(alpha = 1, size = 1, color=test$sampleMatrixType, PCi=1, PCj=2)) -->
+<!-- ``` -->
+
+<!-- ##BIOG vs HEID -->
+<!-- ```{r} -->
+<!-- idx<-which(test$cohortName == "BIOG" | test$cohortName == "HEID") -->
+<!-- testPCA<-PCA(data=test[idx,1:26]) -->
+<!-- BIOGvsHEID<-plotScores(model=testPCA, optns=list(size=1, alpha =1, color=test$cohortName[idx], PCi=1, PCj=2, discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- ``` -->
+
+<!-- ##BIOG vs HARV -->
+<!-- ```{r} -->
+<!-- idx<-which(test$cohortName == "BIOG" | test$cohortName == "HARV") -->
+<!-- testPCA<-PCA(data=test[idx,1:26]) -->
+<!-- BIOGvsHARV <- plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName[idx], PCi=1, PCj=2, discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- ``` -->
+
+<!-- ##BIOG vs CAM -->
+<!-- ```{r} -->
+<!-- idx<-which(test$cohortName == "BIOG" | test$cohortName == "CAM") -->
+<!-- testPCA<-PCA(data=test[idx,1:26]) -->
+<!-- BIOGvsCAM<-plotScores(model=testPCA, optns=list(size= 1, color=test$cohortName[idx], PCi=1, PCj=2, discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- ``` -->
+<!-- ##BIOG vs CAMFU1 -->
+<!-- ```{r} -->
+<!-- idx<-which(test$cohortName == "BIOG" | test$cohortName == "CAMFU1") -->
+<!-- testPCA<-PCA(data=test[idx,1:26]) -->
+<!-- BIOGvsCAMFU1<-plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName[idx],PCi=1, PCj=2,  discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- ``` -->
+<!-- ##BIOG vs CAMFU2 -->
+<!-- ```{r} -->
+<!-- idx<-which(test$cohortName == "BIOG" | test$cohortName == "CAMFU2") -->
+<!-- testPCA<-PCA(data=test[idx,1:26]) -->
+<!-- BIOGvsCAMFU2<- plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName[idx],PCi=1, PCj=2,  discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- ``` -->
+<!-- ##BIOG vs HLTHY -->
+<!-- ```{r} -->
+<!-- idx<-which(test$cohortName == "BIOG" | test$cohortName == "HLTHY") -->
+<!-- testPCA<-PCA(data=test[idx,1:26]) -->
+<!-- BIOGvsHLTHY<-plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName[idx], PCi=1, PCj=2, discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- ``` -->
+
+<!-- #PC1 vs PC2  -->
+<!-- ```{r} -->
+<!-- names(df) -->
+
+<!-- cat(paste(shQuote(names(df), type="cmd"), collapse=", ")) -->
+<!-- names_to_select <- c("cohortName", "sampleID", "sex", "age", "plateID", "covid_status", "1-methylhistidine", "3-methylhistidine", "Alanine", "alpha-aminobutyric acid", "Arginine", "Asparagine", "Aspartic acid", "beta-alanine", "Citrulline", "Glutamic acid", "Glutamine", "Glycine", "Histidine", "Isoleucine", "Leucine", "Lysine", "Methionine", "Ornithine", "Phenylalanine", "Proline", "Sarcosine", "Serine", "Taurine", "Threonine", "Tyrosine", "Valine") -->
+
+<!-- # which_names <- which(names(BIOG) %in% names_to_select) -->
+<!-- # BIOG <- BIOG[which_names] -->
+<!-- #  -->
+<!-- # which_names <- which(names(HEID) %in% names_to_select) -->
+<!-- # HEID <- HEID[which_names] -->
+<!-- #  -->
+<!-- # which_names <- which(names(HARV) %in% names_to_select) -->
+<!-- # HARV <- HARV[which_names] -->
+
+<!-- listdf<- list(BIOG = BIOG, -->
+<!--               HEID = HEID, -->
+<!--               HARV = HARV, -->
+<!--               CAM = CAM, -->
+<!--               CAMFU1 = CAMFU1, -->
+<!--               CAMFU2 = CAMFU2, -->
+<!--               PATH = PATH,  -->
+<!--               HLTHY = HLTHY) -->
+<!-- for(i in 1:length(listdf)){ -->
+<!--   which_names <- which(names(listdf[[i]]) %in% names_to_select) -->
+<!-- listdf[[i]] <- listdf[[i]][which_names] -->
+<!-- } -->
+
+<!-- View(rbind(listdf[[1]], listdf[[2]])) -->
+
+<!-- for(i in 1:length(cohorts)) -->
+<!-- { -->
+<!--   for(j in 1:length(cohorts)) -->
+<!--   { -->
+<!--     if(j>i) -->
+<!--     { -->
+<!--        #set up names for outlier list, eg PC1vPC2 -->
+<!--         placeHolder<- paste0(names(listdf[i]), "vs", names(listdf[j])) -->
+
+<!--         testPCA<-PCA(data=test[,1:26]) -->
+<!--     }}} -->
+
+
+<!-- cohorts<- list("BIOG", "CAM", "HLTHY") -->
+
+<!-- temp<-list() -->
+<!-- for(i in 1:length(cohorts)) -->
+<!-- { -->
+<!--   for(j in 1:length(cohorts)) -->
+<!--   { -->
+<!--     if(j>i) -->
+<!--     { -->
+<!--        #set up names for outlier list, eg PC1vPC2 -->
+<!--         placeHolder[i]<- paste0(cohorts[i], "vs", cohorts[j]) -->
+
+
+<!--         # idx<-which(test$cohortName == cohorts[i] | test$cohortName == cohorts[j]) -->
+<!--         # testPCA<-PCA(data=test[idx,1:26]) -->
+<!--         #  -->
+<!--         # temp[i]<-plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName[idx], PCi=1, PCj=2, discretePalette = c( -->
+<!--         #                        "BIOG" =  "yellow", -->
+<!--         #                         "HEID" = "green", -->
+<!--         #                        "HARV" = "purple", -->
+<!--         #                        "CAM" = "#0000CC", -->
+<!--         #                        "CAMFU1" = "#00AAFF", -->
+<!--         #                        "CAMFU2" = "#00FFFF", -->
+<!--         #                        "PATH" = "#FFAA00", -->
+<!--         #                        "HLTHY"= "#FF0000"))) -->
+<!--     } -->
+<!--   } -->
+<!-- } -->
+
+
+
+<!-- idx<-which(test$cohortName == "BIOG" | test$cohortName == "HLTHY") -->
+<!-- testPCA<-PCA(data=test[idx,1:26]) -->
+<!-- BIOGvsHLTHY<-plotScores(model=testPCA, optns=list(size = 1, color=test$cohortName[idx], PCi=1, PCj=2, discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- ``` -->
+
+<!-- ##HEIDvsHARV -->
+<!-- ##HEIDvsCAM -->
+<!-- #Group imputation  -->
+<!-- ```{r} -->
+<!-- df[sapply(df, is.character)] <- lapply(df[sapply(df, is.character)], as.factor) -->
+<!-- tryimp<-missForest(xmis= df[ , !names(df) %in% c("sampleID")]) -->
+
+<!-- test<-tryimp[["ximp"]] -->
+<!-- # remove standards -->
+<!--  test <- test[,!grepl("13C", colnames(test))] -->
+<!--  test <- test[,!grepl("Tag", colnames(test))] -->
+
+<!-- testPCA<-PCA(data=test[,7:32], rank = 10) -->
+
+<!-- ALLcohorts <-plotScores(model=testPCA, optns=list(size=1, alpha=1,color= test$cohortName, discretePalette = c( -->
+<!--                                "BIOG" =  "yellow", -->
+<!--                                 "HEID" = "green", -->
+<!--                                "HARV" = "purple", -->
+<!--                                "CAM" = "#0000CC", -->
+<!--                                "CAMFU1" = "#00AAFF", -->
+<!--                                "CAMFU2" = "#00FFFF", -->
+<!--                                "PATH" = "#FFAA00", -->
+<!--                                "HLTHY"= "#FF0000"))) -->
+<!-- plotLoadings(model=testPCA, optns=list(PCi=1, PCj=2)) -->
+<!-- ``` -->
+<!-- #Individual Imputation -->
+<!-- ```{r} -->
+<!-- ######################Individual Imputation####################################### -->
+
+<!-- colnames(BIOG_Meta) -->
+
+<!-- impcols <- -->
+<!--   c( -->
+<!--     "category_bergamaschi", -->
+<!--     "group", -->
+<!--     "sex", -->
+<!--     "age", -->
+<!--     "smoker", -->
+<!--     "leukocytes_nL", -->
+<!--     "neutrophils_nL", -->
+<!--     "lymphocytes_nL", -->
+<!--     "monocytes_nL", -->
+<!--     "platelets_nL", -->
+<!--     "glucose_mg_dL", -->
+<!--     "creatinine_mg_dL", -->
+<!--     "alt_U_L", -->
+<!--     "epoc", -->
+<!--     "diabetes", -->
+<!--     "hypertension", -->
+<!--     "cardiovascular", -->
+<!--     "cerebrovascular", -->
+<!--     "hepatitis_b_virus", -->
+<!--     "renal_insufficiency", -->
+<!--     "immunodeficiency", -->
+<!--     "liver_failure" , -->
+<!--     "c_reactive_protein_mg_L", -->
+<!--     "d_dimer_ng_mL" -->
+<!--   ) -->
+
+
+
+<!-- x<-cbind(BIOG_META[,impcols], BIOG_DATA) -->
+
+<!-- x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor) -->
+
+<!-- (x[,!names(x) %in% c("sampleID")]) -->
+
+<!-- imp<-missForest(xmis = (x[,!names(x) %in% c("sampleID")]), ntree = 10, variablewise = F) -->
+
+<!-- idx<- as.data.frame(which(is.na(x), arr.ind=TRUE)) -->
+
+<!-- idx$sampleID<- x[idx$row,"sampleID"] -->
+
+<!-- for(i in 1:nrow(idx)){ -->
+<!--   #fill imputed column -->
+<!--   idx$imputed[i]<-imp[["ximp"]][idx$row[i],idx$col[i]] -->
+<!--   idx$Analyte[i]<-colnames(imp[["ximp"]][idx$col[i]]) -->
+<!-- } -->
+
+<!-- idy <-which(colnames(x) == "X1.methylhistidine") -->
+
+<!-- imputedBiogune<-idx[idx$col >= idy, ] -->
+
+<!-- ``` -->
+<!-- ##Biogune cohort -->
+<!-- Contains covid, diabetes and controls but is really SERUM not PLASMA -->
+
+<!-- Understanding genuine NAs that require imputation: Anything that is below a threshold, but still has a number, is not an NA value.  -->
+
+<!-- ```{r} -->
+<!-- ######################Dataset with missing####################################### -->
+
+<!-- #ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/bioGune/dataElements/covid19_bioGune_PLA_ANN.daE"))) -->
+<!-- aaMeta1<-ann@obsDescr[[1]] -->
+
+<!-- #aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/bioGune/dataElements/covid19_bioGune_PLA_AA.daE")))) -->
+<!-- aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements -->
+<!-- aaMeta2<-aa@obsDescr[[1]] #metadata from covid19_mauritius_PLA_AA.daE file -->
+
+<!-- # match Amino Acids and both Annotations -->
+<!-- aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),] -->
+<!-- aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+<!-- aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+
+<!-- aaMetaF<-merge(aaMeta1, -->
+<!--                   aaMeta2, -->
+<!--                   by.x ="sampleID",by.y = "sampleID") -->
+<!-- rm(aaMeta1, aaMeta2) -->
+
+<!-- BIOG_META<-aaMetaF -->
+
+<!-- #attach sample ID  -->
+<!-- aaData$sampleID<-aaMetaF$sampleID -->
+
+<!-- # #remove standards -->
+<!-- # aaData <- aaData[,!grepl("13C", colnames(aaData))] -->
+<!-- # aaData <- aaData[,!grepl("Tag", colnames(aaData))] -->
+
+<!-- #columns with greater than 80% missing removed -->
+<!-- testnas<-colSums(is.na(aaData)) -->
+<!-- pna<-list() -->
+<!-- for(i in 1:length(testnas)){ -->
+<!--  pna[i] <-testnas[i]/nrow(aaData)*100 -->
+<!-- } -->
+<!-- idx<-which(pna>80) -->
+<!-- if(length(idx>0)){ -->
+<!--  aaData<-aaData[,-idx]  -->
+<!-- } -->
+
+<!-- #samples with grater than 80% missing removed -->
+<!-- testnas<-rowSums(is.na(aaData)) -->
+<!-- pna<-list() -->
+<!-- for(i in 1:length(testnas)){ -->
+<!--  pna[i] <-testnas[i]/nrow(aaData)*100 -->
+<!-- } -->
+<!-- idx<-which(pna>80) -->
+<!-- if(length(idx >0)){ -->
+<!--   aaData<-aaData[-idx,] -->
+<!-- } -->
+
+<!-- #columns with greater than 80% missing removed -->
+<!-- testnas<-colSums(is.na(aaMetaF)) -->
+<!-- pna<-list() -->
+<!-- for(i in 1:length(testnas)){ -->
+<!--  pna[i] <-testnas[i]/nrow(aaMetaF)*100 -->
+<!-- } -->
+<!-- idx<-which(pna>40) -->
+<!-- if(length(idx>0)){ -->
+<!--  aaMetaF<-aaMetaF[,-idx]  -->
+<!-- } -->
+
+<!-- BIOG_Data <- aaData -->
+<!-- BIOG_Meta <- aaMetaF -->
+
+<!-- rm(aaData, aaMeta1, aaMeta2, aaMetaF) -->
+
+<!-- ######################Individual Imputation####################################### -->
+
+<!-- colnames(BIOG_Meta) -->
+
+<!-- impcols <- -->
+<!--   c( -->
+<!--     "category_bergamaschi", -->
+<!--     "group", -->
+<!--     "sex", -->
+<!--     "age", -->
+<!--     "smoker", -->
+<!--     "leukocytes_nL", -->
+<!--     "neutrophils_nL", -->
+<!--     "lymphocytes_nL", -->
+<!--     "monocytes_nL", -->
+<!--     "platelets_nL", -->
+<!--     "glucose_mg_dL", -->
+<!--     "creatinine_mg_dL", -->
+<!--     "alt_U_L", -->
+<!--     "epoc", -->
+<!--     "diabetes", -->
+<!--     "hypertension", -->
+<!--     "cardiovascular", -->
+<!--     "cerebrovascular", -->
+<!--     "hepatitis_b_virus", -->
+<!--     "renal_insufficiency", -->
+<!--     "immunodeficiency", -->
+<!--     "liver_failure" , -->
+<!--     "c_reactive_protein_mg_L", -->
+<!--     "d_dimer_ng_mL" -->
+<!--   ) -->
+
+
+
+<!-- x<-cbind(BIOG_META[,impcols], BIOG_DATA) -->
+
+<!-- x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor) -->
+
+<!-- (x[,!names(x) %in% c("sampleID")]) -->
+
+<!-- imp<-missForest(xmis = (x[,!names(x) %in% c("sampleID")]), ntree = 10, variablewise = F) -->
+
+<!-- idx<- as.data.frame(which(is.na(x), arr.ind=TRUE)) -->
+
+<!-- idx$sampleID<- x[idx$row,"sampleID"] -->
+
+<!-- for(i in 1:nrow(idx)){ -->
+<!--   #fill imputed column -->
+<!--   idx$imputed[i]<-imp[["ximp"]][idx$row[i],idx$col[i]] -->
+<!--   idx$Analyte[i]<-colnames(imp[["ximp"]][idx$col[i]]) -->
+<!-- } -->
+
+<!-- idy <-which(colnames(x) == "X1.methylhistidine") -->
+
+<!-- imputedBiogune<-idx[idx$col >= idy, ] -->
+
+<!-- ``` -->
+
+<!-- ##Heidleberg -->
+
+
+<!-- ```{r} -->
+<!-- ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/heidelberg/DataElements/covid19_heidelberg_ANN.daE"))) -->
+<!-- aaMeta1<-ann@obsDescr[[1]] -->
+
+<!-- aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/heidelberg/DataElements/covid19_heidelberg_SER_AA.daE")))) -->
+<!-- aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements -->
+<!-- aaMeta2<-aa@obsDescr[[1]] #metadata from SER_AA.daE file -->
+
+<!-- # match Amino Acids and both Annotations -->
+<!-- aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),] -->
+<!-- aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+<!-- aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+
+<!-- aaMetaF<-merge(aaMeta1, -->
+<!--                   aaMeta2, -->
+<!--                   by.x ="sampleID",by.y = "sampleID") -->
+<!-- rm(aaMeta1, aaMeta2) -->
+
+<!-- #attach sample ID  -->
+<!-- aaData$sampleID<-aaMetaF$sampleID -->
+
+<!-- #remove standards -->
+<!-- aaData <- aaData[,!grepl("13C", colnames(aaData))] -->
+<!-- aaData <- aaData[,!grepl("Tag", colnames(aaData))] -->
+
+<!-- #columns with greater than 80% missing removed -->
+<!-- testnas<-colSums(is.na(aaData)) -->
+<!-- pna<-list() -->
+<!-- for(i in 1:length(testnas)){ -->
+<!--  pna[i] <-testnas[i]/nrow(aaData)*100 -->
+<!-- } -->
+<!-- idx<-which(pna>80) -->
+<!-- if(length(idx>0)){ -->
+<!--  aaData<-aaData[,-idx]  -->
+<!-- } -->
+
+<!-- #samples with grater than 80% missing removed -->
+<!-- testnas<-rowSums(is.na(aaData)) -->
+<!-- pna<-list() -->
+<!-- for(i in 1:length(testnas)){ -->
+<!--  pna[i] <-testnas[i]/nrow(aaData)*100 -->
+<!-- } -->
+<!-- idx<-which(pna>80) -->
+<!-- if(length(idx >0)){ -->
+<!--   aaData<-aaData[-idx,] -->
+<!-- } -->
+
+<!-- #columns with greater than 80% missing removed -->
+<!-- testnas<-colSums(is.na(aaMetaF)) -->
+<!-- pna<-list() -->
+<!-- for(i in 1:length(testnas)){ -->
+<!--  pna[i] <-testnas[i]/nrow(aaMetaF)*100 -->
+<!-- } -->
+<!-- idx<-which(pna>40) -->
+<!-- if(length(idx>0)){ -->
+<!--  aaMetaF<-aaMetaF[,-idx]  -->
+<!-- } -->
+<!-- colnames(aaMetaF) -->
+<!-- impcols <- -->
+<!--   c( -->
+<!--     "sampleTimePoint", -->
+<!--     "Sex" , -->
+<!--     "Year of Birth", -->
+<!--     "BMI", -->
+<!--     "Death=1", -->
+<!--     "Status", -->
+<!--     "Time in hospital" , -->
+<!--     "Oxygen demand: no=0, yes=1", -->
+<!--     "ICU = 1" , -->
+<!--     "Oxygenation: No=0, HFNO=1, MV=2" , -->
+<!--     "Sodium (mM)", -->
+<!--     "CRP max", -->
+<!--     "Crea max", -->
+<!--     "LDH (day of creatine)" , -->
+<!--     "Thrombo (day of creatine)", -->
+<!--     "Thrombo min", -->
+<!--     "GOT max", -->
+<!--     "LDH max" , -->
+<!--     "Harnstoff max", -->
+<!--     "D-Dim max", -->
+<!--     "Leuk min", -->
+<!--     "Leuk max" , -->
+<!--     "Lymph abs. min", -->
+<!--     "Lymph abs. max", -->
+<!--     "Glucose (same day as Insulin)", -->
+<!--     "Insulin", -->
+<!--     "HOMA", -->
+<!--     "ANA", -->
+<!--     "Vitamin D", -->
+<!--     "Leukocytes Urine Sediment >15", -->
+<!--     "Nitrite 1/0", -->
+<!--     "Protein: 0, Traces, Amount", -->
+<!--     "Ketone Bodies: 0, Traces or Amount" -->
+<!--   ) -->
+
+
+<!-- x<-cbind(aaMetaF[,impcols], aaData) -->
+
+<!-- x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor) -->
+
+<!-- (x[,!names(x) %in% c("sampleID")]) -->
+
+<!-- imp<-missForest(xmis = (x[,!names(x) %in% c("sampleID")]), ntree = 10, variablewise = F) -->
+
+<!-- idx<- as.data.frame(which(is.na(x), arr.ind=TRUE)) -->
+
+<!-- idx$sampleID<- x[idx$row,"sampleID"] -->
+
+<!-- for(i in 1:nrow(idx)){ -->
+<!--   #fill imputed column -->
+<!--   idx$imputed[i]<-imp[["ximp"]][idx$row[i],idx$col[i]] -->
+<!--   idx$Analyte[i]<-colnames(imp[["ximp"]][idx$col[i]]) -->
+<!-- } -->
+
+<!-- idy <-which(colnames(x) == "X1.methylhistidine") -->
+
+<!-- imputedHeidlberg<-idx[idx$col >= idy, ] -->
+
+
+<!-- # #rename -->
+<!-- # HEID_DATA<-aaData -->
+<!-- # HEID_META<-aaMetaF -->
+<!-- #  -->
+<!-- # rm(aaData, aaMetaF) -->
+
+<!-- ``` -->
+
+<!-- #Plasma  -->
+<!-- ##Cambridge -->
+<!-- ```{r} -->
+<!-- ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_ANN_fix.daE"))) -->
+<!-- aaMeta1<-ann@obsDescr[[1]] -->
+
+<!-- aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_AA2.daE")))) -->
+<!-- aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements -->
+<!-- aaMeta2<-aa@obsDescr[[1]] #metadata from PLA_AA.daE file -->
+
+<!-- # match Amino Acids and both Annotations -->
+<!-- aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),] -->
+<!-- aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+<!-- aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+
+<!-- aaMetaF<-merge(aaMeta1, -->
+<!--                   aaMeta2, -->
+<!--                   by.x ="sampleID",by.y = "sampleID") -->
+<!-- rm(aaMeta1, aaMeta2) -->
+
+
+<!-- ``` -->
+
+<!-- ###Cambridge -->
+<!-- ```{r} -->
+<!-- ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_ANN_fix.daE"))) -->
+<!-- aaMeta1<-ann@obsDescr[[1]] -->
+
+<!-- aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_AA2.daE")))) -->
+<!-- aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements -->
+<!-- aaMeta2<-aa@obsDescr[[1]] #metadata from PLA_AA.daE file -->
+
+<!-- # match Amino Acids and both Annotations -->
+<!-- aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),] -->
+<!-- aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+<!-- aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+
+<!-- aaMetaF<-merge(aaMeta1, -->
+<!--                   aaMeta2, -->
+<!--                   by.x ="sampleID",by.y = "sampleID") -->
+
+<!-- rm(aaMeta1, aaMeta2) -->
+
+<!-- #label data with sampleID -->
+<!-- aaData$sampleID<-aaMetaF$sampleID -->
+
+<!-- aaData$aa_na_count <- apply(aaData, 1, function(x) sum(is.na(x))) #make column of how many NAs exist in each row -->
+
+<!-- #rename -->
+<!-- CAM_DATA<-aaData -->
+<!-- CAM_META<-aaMetaF -->
+
+<!-- CAM<-merge(CAM_META, CAM_DATA, by=c("sampleID")) -->
+
+<!-- ``` -->
+
+<!-- ###Cambridge Follow Up 1 -->
+<!-- ```{r} -->
+<!-- ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_ANN_fix.daE"))) -->
+<!-- aaMeta1<-ann@obsDescr[[1]] -->
+
+<!-- aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/cambridgeFollowUp/DataElements/covid19_cambridgeFollowUp_PLA_AA.daE")))) -->
+<!-- aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements -->
+<!-- aaMeta2<-aa@obsDescr[[1]] #metadata from PLA_AA.daE file -->
+
+<!-- # match Amino Acids and both Annotations -->
+<!-- aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),] -->
+<!-- aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+<!-- aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+
+<!-- aaMetaF<-merge(aaMeta1, -->
+<!--                   aaMeta2, -->
+<!--                   by.x ="sampleID",by.y = "sampleID") -->
+
+<!-- rm(aaMeta1, aaMeta2) -->
+
+<!-- #label data with sampleID -->
+<!-- aaData$sampleID<-aaMetaF$sampleID -->
+
+<!-- aaData$aa_na_count <- apply(aaData, 1, function(x) sum(is.na(x))) #make column of how many NAs exist in each row -->
+
+<!-- #rename  -->
+<!-- CAM_FU1_DATA<-aaData -->
+<!-- CAM_FU1_META<-aaMetaF -->
+
+<!-- rm(aaData, aaMetaF) -->
+
+<!-- ``` -->
+
+<!-- ###Cambridge Follow Up 2 -->
+<!-- ```{r} -->
+<!-- ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/cambridge/DataElements/covid19_cambridge_PLA_ANN_fix.daE"))) -->
+<!-- aaMeta1<-ann@obsDescr[[1]] -->
+
+<!-- aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/cambridgeFollowUpPart2/DataElements/covid19_cambridgeFU2_PLA_AA.daE")))) -->
+<!-- aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements -->
+<!-- aaMeta2<-aa@obsDescr[[1]] #metadata from PLA_AA.daE file -->
+
+<!-- # match Amino Acids and both Annotations -->
+<!-- aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),] -->
+<!-- aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+<!-- aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+
+<!-- aaMetaF<-merge(aaMeta1, -->
+<!--                   aaMeta2, -->
+<!--                   by.x ="sampleID",by.y = "sampleID") -->
+
+<!-- rm(aaMeta1, aaMeta2) -->
+
+<!-- #add sampleID to data -->
+<!-- aaData$sampleID<-aaMetaF$sampleID -->
+
+<!-- aaData$aa_na_count <- apply(aaData, 1, function(x) sum(is.na(x))) #make column of how many NAs exist in each row -->
+
+<!-- #rename  -->
+<!-- CAM_FU2_DATA<-aaData -->
+<!-- CAM_FU2_META<-aaMetaF -->
+
+<!-- ``` -->
+
+<!-- ##Pathwest -->
+<!-- ```{r} -->
+<!-- ann<-local(get(load("~/OneDrive - Murdoch University/datasets/covid19/pathwestFollowUp/DataElements/covid19_pathwestFU_ANN_recovery.daE"))) -->
+<!-- aaMeta1<-ann@obsDescr[[1]] -->
+
+<!-- aa<-local(get(load(file.path("~/OneDrive - Murdoch University/datasets/covid19/pathwestFollowUp/DataElements/covid19_pathwestFU_PLA_AA.daE")))) -->
+<!-- aaData<-data.frame(apply(aa@.Data,2,as.numeric)) #AminoAcis measurements -->
+<!-- aaMeta2<-aa@obsDescr[[1]] #metadata from PLA_AA.daE file -->
+
+<!-- # match Amino Acids and both Annotations -->
+<!-- aaMeta1<-aaMeta1[which(aaMeta1$sampleID %in% aaMeta2$sampleID),] -->
+<!-- aaData<-aaData[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+<!-- aaMeta2<-aaMeta2[which(aaMeta2$sampleID %in% aaMeta1$sampleID),] -->
+
+<!-- aaMetaF<-merge(aaMeta1, -->
+<!--                   aaMeta2, -->
+<!--                   by.x ="sampleID",by.y = "sampleID") -->
+<!-- rm(aaMeta1, aaMeta2) -->
+
+<!-- ``` -->
