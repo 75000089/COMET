@@ -9,7 +9,7 @@ output: html_document
 ```{r}
 #load("~/Documents/COMET/Data/data2769.RData")
 load("~/Downloads/redo2769.Rdata")
-
+load("~/Downloads/OneDrive_1_09-11-2023/500samplesforfigures.RData")
 #load("~/git/75000089/COMET/SerumCometCompleteOnly.Rdata")
 
 functionDir <- "/Users/lucygrigoroff/git/phenological/mva-plots/R/"
@@ -118,7 +118,7 @@ impcols <- c(
   "Toxin"
              )
 
-#"Company"            "Study_id"           "Toxin"              "Target"                      "Animal_no."         "Timepoint"          "Sacrifice_subgroup"        "doseFlag" 
+SCdf<- full500
 
 #column to begin creating missingness
 start <- which(colnames(SCdf) == "S_Creatinine")
@@ -133,11 +133,12 @@ cat(paste(shQuote(paste0( p[1,] * 100, " %"), type="cmd"), collapse=", "))
 rn<-c("5 %", "10 %", "20 %", "30 %", "40 %")
 
 #for refence
+#full<- SCdf
 full<-SCdf[,start:end]
-```
+#```
 
 #set up original Albumin and Total Protein Bias
-```{r}
+#```{r}
 #set up external checks
 original.lm.1 <- summary(lm(S_Albumin ~ S_Total_protein, data = SCdf))
 # original.lm.1[["r.squared"]]
@@ -151,9 +152,9 @@ for(j in 1:length(t)){
   missed[[j]] <-missedSummary[[j]][["coefficients"]][2,1]
   missedBias[[j]] <- abs((original - missed[[j]])/original)
 }
-```
+#```
 #set up original AST adn ALT
-```{r}
+#```{r}
 ####################
 original.lm.2 <- summary(lm(S_ALT ~ S_AST, data = SCdf))
 # original.lm.1[["r.squared"]]
@@ -169,6 +170,8 @@ for(j in 1:length(t)){
 }
 ```
 
+
+
 #unstratified
 
 ```{r, results='hide', message=FALSE, warning=FALSE}
@@ -182,7 +185,7 @@ impcols_list<- list(NULL, "Company", c( "Company" ,
                                        "Target" ))
 for(impcols in impcols_list){
   
-
+#####################################################MICErf
 results_list <- list()
 for(k in 1:20){
 test<-list()
@@ -337,9 +340,9 @@ if(length(impcols) == 1){
    impco<- "_Company"
  }
  
-  # if(length(impcols) > 1){
-  # impco<- "_All"
-  # }
+  if(length(impcols) > 1){
+  impco<- "_All"
+  }
  
   # if(length(impcols) > 1){
   # impco<- "_All_Toxin"
@@ -377,49 +380,13 @@ list_name <- paste("summary_MICErf", missing, impco, sep = "")
 assign(list_name, results, envir = .GlobalEnv)
 
 
-
-
-
-
-
-
-# #nameing
-# 
-#  if((MCAR[1] %in% t[1])){
-#    missing<-"_MCAR"
-#  }
-# 
-# if((MAR[1] %in% t[1]) ){
-#   missing <-"MAR"
-# }
-# 
-# if((MNAR[1] %in% t[1]) ){
-#   missing <-"MNAR"
-# }
-# 
-# if(length(impcols) == 1){
-#    impco<- "_Company"
-#  }
-#  
-#   if(length(impcols) > 1){
-#   impco<- "_All"
-#   }
-#  
-#    if(length(impcols) < 1){
-#    impco<-"_noMeta"
-#  }
-# 
-# list_name <- paste("MICErf", missing, impco, sep = "")
-# assign(list_name, MICErf, envir = .GlobalEnv)
-
-
 #```
 
-##missForest
+######################################################################################missForest
 #```{r}
 
 results_list <- list()
-for(k in 1:3){
+for(k in 1:20){
 FULL<-list()
 PARTIAL <- list()
 missForest<-list()
@@ -621,36 +588,6 @@ for (metric in metrics) {
 list_name <- paste("summary_missForest", missing, impco, sep = "")
 assign(list_name, results, envir = .GlobalEnv)
 
-
-
-# #nameing
-# 
-#  if((MCAR[1] %in% t[1])){
-#    missing<-"_MCAR"
-#  }
-# 
-# if((MAR[1] %in% t[1]) ){
-#   missing <-"MAR"
-# }
-# 
-# if((MNAR[1] %in% t[1]) ){
-#   missing <-"MNAR"
-# }
-# 
-# if(length(impcols) == 1){
-#    impco<- "_Company"
-#  }
-#  
-#   if(length(impcols) > 1){
-#   impco<- "_All"
-#   }
-#  
-#    if(length(impcols) < 1){
-#    impco<-"_noMeta"
-#  }
-# 
-# list_name <- paste("missForest", missing, impco, sep = "")
-# assign(list_name, missForest, envir = .GlobalEnv)
 }
 
 ```
@@ -673,7 +610,7 @@ impcols_list<- list("Company", c( "Company" ,
 for(impcols in impcols_list){
 
 #library(sjmisc)
-##MICErf strata
+######################################################################MICErf strata
 results_list <- list()
 for(k in 1:20){
   #test<-list()
@@ -889,55 +826,12 @@ assign(list_name, results, envir = .GlobalEnv)
 
 # Now, `results` is a list containing mean and standard deviation for each metric.
 
-
-
-# # Assuming MICErf_strata_MCAR_Company is your list with 20 entries
-# n_entries <- length(results_list)
-# 
-# # Initialize a matrix to store the results
-# result_matrix_NRMSE <- matrix(NA, nrow = n_entries, ncol = length(results_list[[1]][["NRMSE"]]))
-# result_matrix_partialMAE <- matrix(NA, nrow = n_entries, ncol = length(results_list[[1]][["partialMAE"]]))
-# result_matrix_fullMAE <- matrix(NA, nrow = n_entries, ncol = length(results_list[[1]][["fullMAE"]]))
-# result_matrix_imputedBias.1 <- matrix(NA, nrow = n_entries, ncol = length(results_list[[1]][["imputedBias.1"]]))
-# result_matrix_imputedBias.2 <- matrix(NA, nrow = n_entries, ncol = length(results_list[[1]][["imputedBias.2"]]))
-# 
-# # Loop through the list and extract "NRMSE" values into the matrix
-# for (i in 1:n_entries) {
-#   result_matrix_NRMSE[i, ] <- unlist(results_list[[i]][["NRMSE"]])
-#    result_matrix_partialMAE[i, ] <- unlist(results_list[[i]][["partialMAE"]])
-#     result_matrix_fullMAE[i, ] <- unlist(results_list[[i]][["fullMAE"]])
-#      result_matrix_imputedBias.1[i, ] <- unlist(results_list[[i]][["imputedBias.1"]])
-#       result_matrix_imputedBias.2[i, ] <- unlist(results_list[[i]][["imputedBias.2"]])
-#       
-# }
-# 
-# mean_values_NRMSE <- apply(result_matrix_NRMSE, 2, mean)
-# std_dev_values_NRMSE <- apply(result_matrix_NRMSE, 2, sd)
-# 
-# mean_values_partialMAE <- apply(result_matrix_partialMAE, 2, mean)
-# std_dev_values_partialMAE <- apply(result_matrix_partialMAE, 2, sd)
-# 
-# mean_values_fullMAE <- apply(result_matrix_fullMAE, 2, mean)
-# std_dev_values_fullMAE <- apply(result_matrix_fullMAE, 2, sd)
-# 
-# mean_values_imputedBias.1 <- apply(result_matrix_imputedBias.1, 2, mean)
-# std_dev_values_imputedBias.1 <- apply(result_matrix_imputedBias.1, 2, sd)
-# 
-# mean_values_imputedBias.2 <- apply(result_matrix_imputedBias.2, 2, mean)
-# std_dev_values_imputedBias.2 <- apply(result_matrix_imputedBias.2, 2, sd)
-# 
-# means<-list(NRMSE = mean_values_NRMSE,
-#             paritalMAE = mean_values_partialMAE,
-#             fullMAE = mean_values_fullMAE,
-#             imputedBias.1 = mean_values_imputedBias.1,
-#             imputedBias.1 = mean_values_imputedBias.2)
-
 #```
 
 
 
 
-##missForest strata
+##########################################################################missForest strata
 # Do 20 iterations
 # ```{r}
 results_list <- list()
@@ -1153,35 +1047,6 @@ list_name <- paste("summary_missForest_strata", missing, impco, sep = "")
 assign(list_name, results, envir = .GlobalEnv)
 
 
-
-# #nameing
-# 
-#  if((MCAR[1] %in% t[1])){
-#    missing<-"_MCAR"
-#  }
-# 
-# if((MAR[1] %in% t[1]) ){
-#   missing <-"MAR"
-# }
-# 
-# if((MNAR[1] %in% t[1]) ){
-#   missing <-"MNAR"
-# }
-# 
-# if(length(impcols) == 1){
-#    impco<- "_Company"
-#  }
-#  
-#   if(length(impcols) > 1){
-#   impco<- "_All"
-#   }
-#  
-#    if(length(impcols) < 1){
-#    impco<-"_noMeta"
-#  }
-# 
-# list_name <- paste("missForest_strata", missing, impco, sep = "")
-# assign(list_name, results_list, envir = .GlobalEnv)
 }
 
 ```
@@ -1190,29 +1055,29 @@ assign(list_name, results, envir = .GlobalEnv)
 ```{r}
 
 save(
-      # summary_MICErf_MNAR_All,
-summary_MICErf_MNAR_All_Toxin,
-      # summary_MICErf_MNAR_Company,
-      # summary_MICErf_MNAR_noMeta,
-              # summary_MICErf_strata_MNAR_All,
-              # summary_MICErf_strata_MNAR_Company,
-      # summary_missForest_MNAR_All,
-      # summary_missForest_MNAR_Company,
-      # summary_missForest_MNAR_noMeta,
-              # summary_missForest_strata_MNAR_All,
-              # summary_missForest_strata_MNAR_Company,
-      #MICErf_MNAR_All,
-MICErf_MNAR_All_Toxin,
-      # MICErf_MNAR_Company,
-      # MICErf_MNAR_noMeta,
-              # MICErf_strata_MNAR_All,
-              # MICErf_strata_MNAR_Company,
-      # missForest_MNAR_All,
-      # missForest_MNAR_Company,
-      # missForest_MNAR_noMeta,
-              # missForest_strata_MNAR_All,
-              # missForest_strata_MNAR_Company,
-     file = "MNARiterationV3.Rdata")
+       summary_MICErf_MAR_All,
+summary_MICErf_MAR_All_Toxin,
+       summary_MICErf_MAR_Company,
+       summary_MICErf_MAR_noMeta,
+               summary_MICErf_strata_MAR_All,
+               summary_MICErf_strata_MAR_Company,
+       summary_missForest_MAR_All,
+     summary_missForest_MAR_Company,
+       summary_missForest_MAR_noMeta,
+               summary_missForest_strata_MAR_All,
+               summary_missForest_strata_MAR_Company,
+      MICErf_MAR_All,
+MICErf_MAR_All_Toxin,
+       MICErf_MAR_Company,
+       MICErf_MAR_noMeta,
+               MICErf_strata_MAR_All,
+               MICErf_strata_MAR_Company,
+       missForest_MAR_All,
+       missForest_MAR_Company,
+       missForest_MAR_noMeta,
+               missForest_strata_MAR_All,
+               missForest_strata_MAR_Company,
+     file = "MARiteration500.Rdata")
 save()
 
  #x <- SCdf[,tt]

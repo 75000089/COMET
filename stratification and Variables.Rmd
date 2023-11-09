@@ -7,7 +7,7 @@ output: html_document
 
 ```{r}
 #load("~/Documents/COMET/Data/data2769.RData")
-load("~/git/75000089/COMET/redo2769.Rdata")
+load("~/Downloads/redo2769.Rdata")
 #load("~/git/75000089/COMET/SerumCometCompleteOnly.Rdata")
 
 functionDir <- "/Users/lucygrigoroff/git/phenological/mva-plots/R/"
@@ -97,7 +97,7 @@ ggarrange(plotlist = list(Company, Timepoint, Target, Toxin, DoseFlag, Study_id)
 ```
 #setup
 ```{r}
-t <- MCAR
+t <- MNAR
 
 impcols <- c("Company"
              ,
@@ -159,6 +159,14 @@ for(j in 1:length(t)){
   missed2[[j]] <-missedSummary2[[j]][["coefficients"]][2,1]
   missedBias2[[j]] <- abs((original2 - missed2[[j]])/original2)
 }
+```
+
+
+```{r}
+MNARbias1 <- cbind(rn,rep("incomplete", times = 5),missedBias, rep(0, times = 5), rep("MNAR", times = 5), rep("imputedBias.1"))
+
+MNARbias2 <- cbind(rn,rep("incomplete", times = 5),missedBias2, rep(0, times = 5), rep("MNAR", times = 5), rep("imputedBias.2"))
+
 ```
 
 #unstratified
