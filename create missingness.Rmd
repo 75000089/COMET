@@ -1,0 +1,247 @@
+---
+title: "COMETmissingness"
+author: "Lucy Grigoroff"
+date: "2023-11-09"
+output: html_document
+---
+#Complete cases dataset
+control is defined by animal numers 1-10 (dose group 1) or timepoint 0
+low dose is animal numbers 11-20 (dose group 2) and not timepoint 0
+high dose is animal numers 21-30 (dose group 3) and timepoint not 0
+```{r cars}
+ library(missForest)
+ library(mice)
+ library(CALIBERrfimpute)
+ library(randomForest)
+ library(missMethods)
+ library(lpSolve)
+# devtools::install_github("strengejacke/sjmisc")
+ library(sjmisc)
+ library(tidyverse)
+ library(ggpubr)
+library(reshape2)
+library(ggpmisc)
+library(egg)
+library(devEMF)
+library(see)
+load("/Users/lucygrigoroff/Downloads/new_clinchem_2SD_removed_edited.rda")
+df <- new_clinchem
+
+#set up doseFlag column with control, low, high
+
+df <- df %>% mutate(doseFlag =
+                     case_when((Dose_group == 1 | Timepoint == 0) ~ "Control",
+                               (Dose_group == 2 & Timepoint != 0) ~ "low",
+                              (Dose_group == 3 & Timepoint != 0) ~ "high")
+)
+
+
+#serum data frame
+#SERUM only has 3 timepoints, 24, 48 and 168
+Sdf<- df[,c(1:5,10:13,20:30,32,33)]
+idx <- which(Sdf$Timepoint == 24 | df$Timepoint == 48 |df$Timepoint == 168)
+Sdf <- Sdf[idx,]
+#complete cases
+idx<- which(rowSums(is.na(Sdf[10:20])) > 0)
+SCdf<-Sdf[-idx,]
+
+SCdf <-SCdf%>%relocate("doseFlag", .before = "S_Creatinine" ) %>% relocate("S_Comments", .before = "S_Creatinine")
+
+# #URINE data frame
+# Udf<-df[,c(1:5,10:18,31,33)]
+# #complete cases
+# idx<- which(rowSums(is.na(Udf[11:14])) > 0)
+# UCdf<-Udf[-idx,]
+#
+# #NA summary
+# #SERUM
+# colSums(is.na(Sdf))
+# as.data.frame(sapply(Sdf[10:20], function(x) sum(is.na(x))/8460*100))
+#
+# #URINE
+# colSums(is.na(Udf))
+# as.data.frame(sapply(Udf[11:14], function(x) sum(is.na(x))/25350*100))
+```
+
+#choose data size
+full, 500 or 10
+```{r}
+
+# unique(SCdf$Company)
+# random_sample <- data[sample(nrow(data), 50), ]
+
+
+R <- which(SCdf$Company == "R")
+R<- SCdf[R,]
+R <- R[sample(nrow(R), 10), ]
+
+D <- which(SCdf$Company == "D")
+D <- SCdf[D,]
+D <- D[sample(nrow(D), 10), ]
+
+L <- which(SCdf$Company == "L")
+L <- SCdf[L,]
+L <- L[sample(nrow(L), 10), ]
+
+N <- which(SCdf$Company == "N")
+N <- SCdf[N,]
+N <- N[sample(nrow(N), 10), ]
+
+S <- which(SCdf$Company == "S")
+S <- SCdf[S,]
+S <- S[sample(nrow(S), 10), ]
+
+SCdf<-rbind(R, D, L, N, S)
+
+```
+#choose columns for imputation input
+```{r}
+impcols<-c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
+ #x <- SCdf[,tt]
+
+#to not create missinginess in the following
+miscols <- c(1:11)
+
+#column to begin creating missingness
+start <- which(colnames(SCdf) == "S_Creatinine")
+#or start<-12
+end<-ncol(SCdf)
+
+# firstcol = which(colnames(x)=="a")
+# lastcol = which(colnames(x)=="b")
+#
+# mydf[c(firstcol:lastcol)]
+# c(start:end)
+```
+
+#set up percentages of missingness
+```{r}
+p <- (cbind(0.05, 0.1, 0.2, 0.3, 0.4))
+
+#for graphs in METRICS and FIGURES
+cat(paste(shQuote(paste0( p[1,] * 100, " %"), type="cmd"), collapse=", "))
+rn<-c("5 %", "10 %", "20 %", "30 %", "40 %")
+```
+
+#list of colnames for MCAR missingess
+```{r}
+MCARcols <- c("S_Creatinine", "S_Urea_nitrogen", "S_ALT", "S_AST", "S_Glucose","S_Sodium", "S_Potassium", "S_Calcium", "S_Phosphorus", "S_Albumin", "S_Total_protein")
+
+#cat(paste(shQuote(colnames(SCdf), type="cmd"), collapse=", "))
+
+cnames<-c("Company", "Study_id", "Toxin", "Target", "Key", "Animal_no.", "Timepoint", "Sacrifice_subgroup", "Dose_group", "doseFlag", "S_Comments", "S_Creatinine", "S_Urea_nitrogen", "S_ALT", "S_AST", "S_Glucose", "S_Sodium", "S_Potassium", "S_Calcium", "S_Phosphorus", "S_Albumin", "S_Total_protein")
+
+```
+
+#set up original Albumin and Total Protein Bias
+```{r}
+#set up external checks
+original.lm.1 <- summary(lm(S_Albumin ~ S_Total_protein, data = SCdf))
+# original.lm.1[["r.squared"]]
+original <-original.lm.1[["coefficients"]][2,1]
+
+missed<-list()
+missedSummary<-list()
+missedBias<-list()
+for(j in 1:length(t)){
+  missedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = t[[j]], na.action = na.omit))
+  missed[[j]] <-missedSummary[[j]][["coefficients"]][2,1]
+  missedBias[[j]] <- abs((original - missed[[j]])/original)
+}
+```
+#set up original AST adn ALT
+```{r}
+####################
+original.lm.2 <- summary(lm(S_ALT ~ S_AST, data = SCdf))
+# original.lm.1[["r.squared"]]
+original2 <-original.lm.2[["coefficients"]][2,1]
+
+missed2<-list()
+missedSummary2<-list()
+missedBias2<-list()
+for(j in 1:length(t)){
+  missedSummary2[[j]] <- summary(lm(S_ALT ~ S_AST, data = t[[j]], na.action = na.omit))
+  missed2[[j]] <-missedSummary2[[j]][["coefficients"]][2,1]
+  missedBias2[[j]] <- abs((original2 - missed2[[j]])/original2)
+}
+```
+dose groups, anything that’s in the control group (animal no. 1-10 or timepoint 0 = 1, animal no 11-20 and not timepoint 0 =2, animal no 20-30 and not timepoint 0=3)
+
+control <- df%>%filter(Dose_group == 1 | Timepoint == 0)
+low_dose <- df%>%filter(Dose_group == 2 & Timepoint != 0, )
+high_dose <- df%>%filter(Dose_group == 3 & Timepoint != 0, )
+
+MAR
+Company and comments "IS=insufficient volume", "IS=Insufficient sample" "No internal code;  IS=Insufficient sample" "No internal code;  IS=Insufficient sample; NC=Not calculated"
+
+missForest: control+low+high: clinchem_params + doseFlag + animal_no + timepoint + sacrifice + company
+
+
+#MISSINGNESS
+Using complete cases for serum, create missingness at varying percentages (5, 10, 20, 30 40)
+```{r}
+
+
+#MAR
+MAR <- list()
+for (j in (p)) {
+  placeHolder <- paste0("missing ", j * 100, " %")
+
+  mSdf <- list()
+  test <- SCdf[, miscols]
+  for (i in start:ncol(SCdf)) {
+    #missingness
+    mSdf[[i]] <-
+      missMethods::delete_MAR_1_to_x(ds = SCdf,
+                                      p = j,
+                                      cols_mis = c(i),
+                                      cols_ctrl = c("Company"),
+                                      x = 3)
+    test[, i] <- (mSdf[[i]][[i]])
+  }
+  new_list <- setNames(list(test), placeHolder)
+  MAR <- append(MAR, new_list)
+}
+
+for(j in 1:length(MAR)){
+  MAR[[j]] <- setNames(MAR[[j]], cnames)
+}
+
+#MNAR
+MNAR <- list()
+for (j in (p)) {
+  placeHolder <- paste0("missing ", j * 100, " %")
+
+  mSdf <- list()
+  test <- SCdf[, miscols]
+  for (i in start:ncol(SCdf)) {
+    #missingness
+    mSdf[[i]] <-
+      missMethods::delete_MNAR_1_to_x(ds = SCdf,
+                                      p = j,
+                                      cols_mis = c(i),
+                                      x = 3)
+    test[, i] <- (mSdf[[i]][[i]])
+  }
+  new_list <- setNames(list(test), placeHolder)
+  MNAR <- append(MNAR, new_list)
+}
+
+for(j in 1:length(MNAR)){
+  MNAR[[j]] <- setNames(MNAR[[j]], cnames)
+}
+
+#MCAR
+MCAR<-list()
+for(j in p) {
+  placeHolder <- paste0("missing ", j * 100, " %")
+  mSdf <- list()
+  #missingness
+  mSdf[[i]] <- missMethods::delete_MCAR(ds = SCdf, p = j, MCARcols)
+  new_list <- setNames(list(mSdf[[i]]), placeHolder)
+  MCAR <- append(MCAR, new_list)
+
+}
+
+rm(mSdf, new_list, test, new_clinchem,Sdf, df)
+```
