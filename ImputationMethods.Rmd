@@ -78,46 +78,30 @@ full, 500 or 10
 
 R <- which(SCdf$Company == "R")
 R<- SCdf[R,]
-R <- R[sample(nrow(R), 10), ]
+R <- R[sample(nrow(R), 100), ]
 
 D <- which(SCdf$Company == "D")
 D <- SCdf[D,]
-D <- D[sample(nrow(D), 10), ]
+D <- D[sample(nrow(D), 100), ]
 
 L <- which(SCdf$Company == "L")
 L <- SCdf[L,]
-L <- L[sample(nrow(L), 10), ]
+L <- L[sample(nrow(L), 100), ]
 
 N <- which(SCdf$Company == "N")
 N <- SCdf[N,]
-N <- N[sample(nrow(N), 10), ]
+N <- N[sample(nrow(N), 100), ]
 
 S <- which(SCdf$Company == "S")
 S <- SCdf[S,]
-S <- S[sample(nrow(S), 10), ]
+S <- S[sample(nrow(S), 100), ]
 
 SCdf<-rbind(R, D, L, N, S)
 
+SCdf500full <- SCdf
+
 ```
-#choose columns for imputation input
-```{r}
-impcols<-c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
- #x <- SCdf[,tt]
 
-#to not create missinginess in the following
-miscols <- c(1:11)
-
-#column to begin creating missingness
-start <- which(colnames(SCdf) == "S_Creatinine")
-#or start<-12
-end<-ncol(SCdf)
-
-# firstcol = which(colnames(x)=="a")
-# lastcol = which(colnames(x)=="b")
-#
-# mydf[c(firstcol:lastcol)]
-# c(start:end)
-```
 
 #set up percentages of missingness
 ```{r}
@@ -138,38 +122,8 @@ cnames<-c("Company", "Study_id", "Toxin", "Target", "Key", "Animal_no.", "Timepo
 
 ```
 
-#set up original Albumin and Total Protein Bias
-```{r}
-#set up external checks
-original.lm.1 <- summary(lm(S_Albumin ~ S_Total_protein, data = SCdf))
-# original.lm.1[["r.squared"]]
-original <-original.lm.1[["coefficients"]][2,1]
 
-missed<-list()
-missedSummary<-list()
-missedBias<-list()
-for(j in 1:length(t)){
-  missedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = t[[j]], na.action = na.omit))
-  missed[[j]] <-missedSummary[[j]][["coefficients"]][2,1]
-  missedBias[[j]] <- abs((original - missed[[j]])/original)
-}
-```
-#set up original AST adn ALT
-```{r}
-####################
-original.lm.2 <- summary(lm(S_ALT ~ S_AST, data = SCdf))
-# original.lm.1[["r.squared"]]
-original2 <-original.lm.2[["coefficients"]][2,1]
 
-missed2<-list()
-missedSummary2<-list()
-missedBias2<-list()
-for(j in 1:length(t)){
-  missedSummary2[[j]] <- summary(lm(S_ALT ~ S_AST, data = t[[j]], na.action = na.omit))
-  missed2[[j]] <-missedSummary2[[j]][["coefficients"]][2,1]
-  missedBias2[[j]] <- abs((original2 - missed2[[j]])/original2)
-}
-```
 dose groups, anything that’s in the control group (animal no. 1-10 or timepoint 0 = 1, animal no 11-20 and not timepoint 0 =2, animal no 20-30 and not timepoint 0=3)
 
 control <- df%>%filter(Dose_group == 1 | Timepoint == 0)
@@ -185,7 +139,8 @@ missForest: control+low+high: clinchem_params + doseFlag + animal_no + timepoint
 #MISSINGNESS
 Using complete cases for serum, create missingness at varying percentages (5, 10, 20, 30 40)
 ```{r}
-
+#to not create missinginess in the following
+miscols <- c(1:11)
 
 #MAR
 MAR <- list()
@@ -249,197 +204,85 @@ for(j in p) {
 }
 
 rm(mSdf, new_list, test, new_clinchem,Sdf, df)
+
+
+MCAR500<-MCAR
+MAR500<-MAR
+MNAR500<-MNAR
 ```
 
+
+######Start
+#choose columns for imputation input
+```{r}
+SCdf <- SCdf500full 
+
+impcols<-
+  NULL
+  #"Company"
+  #c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup", "Target")
+  #c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup", "Target", "Toxin")
+
+#column to begin creating missingness
+start <- which(colnames(SCdf) == "S_Creatinine")
+#or start<-12
+end<-ncol(SCdf)
+
+```
 #choose missingess method
 
 Need to change the way the eg CALIBER_MAR list is set up. Use paste 
 ```{r}
-t<- MAR
+t<- MNAR
 full<-SCdf[,start:end]
+#full500<-full
+
 ```
 
+#set up original Albumin and Total Protein Bias
 ```{r}
-# library(scales)
-# 
-# #extract hex color codes for a plot with three elements in ggplot2 
-# hex <- hue_pal()(5)
-# 
-# #display hex color codes
-# hex
-# 
-scm<- scale_color_manual(values = c("incomplete"="black",
-                                      "ncCALIBERrfimpute" = "#F8766D",
-                                      "ncMICErf"="#A3A500",
-                                      "ncmissForest"="#00BF7D",
-                                      "MICErf" = "#00B0F6",
-                                      "missForest"="#E76BF3" ))
-```
-#IMPUTATION
-##CALIBERrfimpute
-###CALIBERrfimpute without clinchem
+#set up external checks
+original.lm.1 <- summary(lm(S_Albumin ~ S_Total_protein, data = SCdf))
+# original.lm.1[["r.squared"]]
+original <-original.lm.1[["coefficients"]][2,1]
 
-CALIBERrfimpute does not handle NAs in the variables it uses to impute. So while clinchem_params + doseFlag + animal_no + timepoint + sacrifice + company was used for missForest, clinchem_params cannot be included in the CALIBERrfimputation. This is because the final imputation will be applied to data with real NAs in the clinchem_params. doseFlag + animal_no + timepoint + sacrifice + company do not have NAs. 
-
-CALIBERrfimpute also does not handle categorical variables as input for imputation. 
-
-Repeat the below process for MCAR, MAR and MNAR
-```{r}
-
-#set.seed(Sys.time())
-
-
- #CALIBERrfimpute
-CALIBER<-list()
-FULL<-list()
-PARTIAL<-list()
-
-imputedfull<-list()
-imputedonly<-list()
-#set up variables used in imputations, CALIBERrfimpute wont accept non-numericals
-x<-SCdf[,impcols]
-x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
-x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
-
-
+missed<-list()
+missedSummary<-list()
+missedBias<-list()
 for(j in 1:length(t)){
-  placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
-  placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
-  
-  #identify how many NAs in each collumn
-idy<- length(which(is.na(t[[j]][,c(12)])))
-
-#set up empty matrix of the correct size 
-matrix_empty = matrix(nrow = idy, ncol = (end - start + 1))
-emptyDF = data.frame(matrix_empty)
-imp<- list()
-
-for(i in start:ncol(t[[j]])){
-  #imputation
-  imp[[i]]<-CALIBERrfimpute::mice.impute.rfcont(y = t[[j]][,i], ry = !is.na(t[[j]][,i]), x = as.matrix(x))
-  emptyDF[,i] <- imp[[i]]
-}
-
-#locate where NA's were created
-idx<-as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
-
-#create full data frame containing the imputed values and partial data frame that has the original value and the imputed value side by side
-imputedfull[[j]]<-t[[j]][,start:end]
-idx$imputed<-idx$original<-NA
-for(i in 1:nrow(idx)){
-  idx$original[i]<-unlist(full[idx$row[i],idx$col[i]])
-  idx$imputed<-unlist(imp[start:end])
-  imputedonly[[j]]<-idx
-  imputedfull[[j]][idx$row[i],idx$col[i]]<-as.numeric(idx$imputed[i])
-}
-
-new_list <- setNames(list(imputedfull[[j]]), placeHolder)
-FULL <- append(FULL, new_list)  
-
-new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
-PARTIAL <- append(PARTIAL, new_list2) 
+  missedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = t[[j]], na.action = na.omit))
+  missed[[j]] <-missedSummary[[j]][["coefficients"]][2,1]
+  missedBias[[j]] <- abs((original - missed[[j]])/original)
 
 }
-  
-  CALIBER<- append(CALIBER, list(PARTIAL = PARTIAL,
-                                 FULL = FULL))
+```
+#set up original AST adn ALT
+```{r}
+####################
+original.lm.2 <- summary(lm(S_ALT ~ S_AST, data = SCdf))
+# original.lm.1[["r.squared"]]
+original2 <-original.lm.2[["coefficients"]][2,1]
 
-#NRMSE + fullMAE
-nrmse <-list()
-fullmae<-list()
-NRMSE<-list()
-fullMAE<-list()
-for(j in 1:length(CALIBER[["FULL"]])){
-  
-placeHolder3 <- paste0( p[,j] * 100, " % missing")  
-
-xi<- as.matrix(CALIBER[["FULL"]][[j]])
-xt<-as.matrix(SCdf[,start:end])
-xm<-as.matrix(t[[j]][,start:end]) 
-  
-nrmse[[j]]<-missForest::nrmse(ximp = xi, xmis = xm, xtrue = xt)
-
-new_list <- setNames((nrmse[j]), placeHolder3)
-NRMSE <- append(NRMSE, new_list) 
-
-fullmae[j] <- mean(abs(xt - xi))
-
-new_list2 <- setNames((fullmae[j]), placeHolder3)
-fullMAE <- append(fullMAE, new_list2) 
-
+missed2<-list()
+missedSummary2<-list()
+missedBias2<-list()
+for(j in 1:length(t)){
+  missedSummary2[[j]] <- summary(lm(S_ALT ~ S_AST, data = t[[j]], na.action = na.omit))
+  missed2[[j]] <-missedSummary2[[j]][["coefficients"]][2,1]
+  missedBias2[[j]] <- abs((original2 - missed2[[j]])/original2)
 }
- 
-#partialMAE
- partialmae <- list()  
- partialMAE<-list()
-  for(j in 1:length(CALIBER[["PARTIAL"]])){
-  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
-    
-  xt <- CALIBER[["PARTIAL"]][[j]][["original"]]
-  xi <- CALIBER[["PARTIAL"]][[j]][["imputed"]]
-  
-  partialmae[j] <- mean(abs(xt - xi))
-  
-  new_list <- setNames((partialmae[j]), placeHolder3)
-  partialMAE <- append(partialMAE, new_list) 
-  }
- 
- #External check 1 CALIBER
-imputed<-list()
-imputedSummary<-list()
-imputedBias<-list()
-imputedBias.1 <- list()
-for(j in 1:length(CALIBER[["FULL"]])){
-  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
-  imputedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = CALIBER[["FULL"]][[j]]))
-  imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
-  imputedBias[[j]]<- abs((original - imputed[[j]])/original)
-  new_list <- setNames((imputedBias[[j]]), placeHolder3)
-  imputedBias.1 <- append(imputedBias.1, new_list) 
-}
-
-#External Check 2 CALIBER
-imputed<-list()
-imputedSummary<-list()
-imputedBias<-list()
-imputedBias.2 <- list()
-for(j in 1:length(CALIBER[["FULL"]])){
-  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
-  imputedSummary[[j]] <- summary(lm(S_ALT ~ S_AST, data = CALIBER[["FULL"]][[j]]))
-  imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
-  imputedBias[[j]]<- abs((original2 - imputed[[j]])/original2)
-  new_list <- setNames((imputedBias[[j]]), placeHolder3)
-  imputedBias.2 <- append(imputedBias.2, new_list) 
-}
- 
-CALIBER<- append(CALIBER, list(NRMSE = NRMSE,
-                               partialMAE = partialMAE,
-                               fullMAE = fullMAE,
-                               imputedBias.1 = imputedBias.1,
-                               imputedBias.2 = imputedBias.2))  
-
-
-if((MCAR[1] %in% t[1]) ){
-  CALIBER_MCAR <-CALIBER
-}
-
-if((MAR[1] %in% t[1]) ){
-  CALIBER_MAR <-CALIBER
-}
-
-if((MNAR[1] %in% t[1]) ){
-  CALIBER_MNAR <-CALIBER
-}
-
 
 ```
 
 
-##MICE
-###MICE with clinchem
+#IMPUTATION
+
+##MICErf
 Repeat the below process for MCAR, MAR and MNAR
 ```{r}
 
+ res<-list()
+for(k in 1:20){
 #full<-SCdf[,12:22]
 test<-list()
 imp<-list()
@@ -452,8 +295,21 @@ for(j in 1:length(t)){
   placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
   placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
   
+  if(length(impcols) == 1){
+   x<-as.data.frame(SCdf[,impcols])
+   colnames(x) <- c("Company")
+ }
+
+  if(length(impcols) > 1){
+   x<-SCdf[,impcols]
+  }
+
+   if(length(impcols) < 1){
+   x<-as.data.frame(rep_len(x = 1, length.out = nrow(SCdf)))
+ }
+  
   #make predictors numeric
-  x<-SCdf[,impcols]
+
  x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
  x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
  
@@ -551,19 +407,7 @@ for(j in 1:length(MICErf[["FULL"]])){
   new_list <- setNames((imputedBias[[j]]), placeHolder3)
   imputedBias.2 <- append(imputedBias.2, new_list) 
 }
-#External check 2 missForest
-imputed<-list()
-imputedSummary<-list()
-imputedBias<-list()
-imputedBias.2 <- list()
-for(j in 1:length(missForest[["FULL"]])){
-  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
-  imputedSummary[[j]] <- summary(lm(S_ALT ~ S_AST, data = missForest[["FULL"]][[j]]))
-  imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
-  imputedBias[[j]]<- abs((original2 - imputed[[j]])/original2)
-  new_list <- setNames((imputedBias[[j]]), placeHolder3)
-  imputedBias.2 <- append(imputedBias.2, new_list) 
-}
+
 
 MICErf<- append(MICErf, list(NRMSE = NRMSE,
                              partialMAE = partialMAE,
@@ -572,40 +416,106 @@ MICErf<- append(MICErf, list(NRMSE = NRMSE,
                              imputedBias.2 = imputedBias.2))
 
 
- if((MCAR[1] %in% t[1]) ){
-  MICErf_MCAR <-MICErf
+res[[k]] <- MICErf
 }
 
+#nameing
+
+ if((MCAR[1] %in% t[1])){
+   missing<-"_MCAR"
+ }
+
 if((MAR[1] %in% t[1]) ){
-  MICErf_MAR <-MICErf
+  missing <-"_MAR"
 }
 
 if((MNAR[1] %in% t[1]) ){
-  MICErf_MNAR <-MICErf
+  missing <-"_MNAR"
 }
+
+if(length(impcols) == 1){
+   impco<- "_Company"
+ }
+
+if(length(impcols) > 1 && !("Toxin" %in% impcols)){
+  impco<- "_All"
+  }
+
+if(length(impcols) > 1 && "Toxin" %in% impcols){
+  impco<- "_All_Toxin"
+  }
+
+ if(length(impcols) < 1){
+   impco<-"_noMeta"
+ }
+
+list_name <- paste("MICErf", missing, impco, sep = "")
+assign(list_name, res, envir = .GlobalEnv)
+
+
+n_entries <- length(res)
+metrics <- c("NRMSE", "partialMAE", "fullMAE", "imputedBias.1", "imputedBias.2")
+
+# Initialize a list to store the results
+results <- list()
+
+# Loop through the metrics
+for (metric in metrics) {
+  result_matrix <- matrix(NA, nrow = n_entries, ncol = length(res[[1]][[metric]]))
+  
+  # Loop through the list and extract the current metric values into the matrix
+  for (i in 1:n_entries) {
+    result_matrix[i, ] <- unlist(res[[i]][[metric]])
+  }
+  
+  # Calculate mean and standard deviation for each column
+  mean_values <- apply(result_matrix, 2, mean)
+  std_dev_values <- apply(result_matrix, 2, sd)
+  
+  results[[metric]] <- list(mean = mean_values, std_dev = std_dev_values)
+}
+
+list_name <- paste("summary_MICErf", missing, impco, sep = "")
+assign(list_name, results, envir = .GlobalEnv)
+
+
 
 ```
 
-###MICE without clinchem
+##MICErf strata
 Repeat the below process for MCAR, MAR and MNAR
 ```{r}
 
+
+  res<-list()
+for(k in 1:20){
 #full<-SCdf[,12:22]
 test<-list()
 imp<-list()
 imp2<-list()
 imputedonly<-list()
-ncMICErf<-list()
+MICErf<-list()
 FULL<-list()
 PARTIAL<-list()
 for(j in 1:length(t)){
   placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
   placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
   
+    if(length(impcols) == 1){
+   x<-as.data.frame(SCdf[,impcols])
+   colnames(x) <- c("Company")
+ }
+
+  if(length(impcols) > 1){
+   x<-SCdf[,impcols]
+  }
+
+   if(length(impcols) < 1){
+   x<-as.data.frame(rep_len(x = 1, length.out = nrow(SCdf)))
+ }
+  
   #make predictors numeric
-x<-SCdf[,impcols]
-  # x<-SCdf %>% 
-  # select("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup")
+
  x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
  x[sapply(x, is.factor)] <- lapply(x[sapply(x, is.factor)], as.numeric)
  
@@ -615,11 +525,41 @@ init = mice(x, maxit=0)
 predM = init$predictorMatrix
 
 #Do imputation
-imp[[j]]<-mice(data = x, method="rf", predictorMatrix = predM)
-imp2[[j]]<-merge_imputations(dat = x, imp = imp[[j]])
-idx<- as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
-idx$imputed<-idx$original<-NA
+# imp[[j]]<-mice(data = x, method="rf", predictorMatrix = predM)
+# imp2[[j]]<-merge_imputations(dat = x, imp = imp[[j]])
 
+
+# #Do imputation
+# 
+stratimp2<- list()
+stratimp<-list()
+for(i in 1:5){
+stratimp<-mice(data = x[which(x$Company == i),], method="rf", predictorMatrix = predM)
+stratimp2[[i]]<-merge_imputations(dat = x[which(x$Company == i),], imp = stratimp)
+
+#if the number of columns are less than 11, then one of them did not contain an NA post stratification, which will prevent the next step. If this is the case, find the column, reattach is and put it in the correct/same order as the others. May only work when it's one column missing
+
+if(ncol(stratimp2[[i]]) < 11){
+  #find missing column
+base <- c("S_Creatinine", "S_Urea_nitrogen", "S_ALT", "S_AST", "S_Glucose", "S_Sodium", "S_Potassium", "S_Calcium", "S_Phosphorus", "S_Albumin", "S_Total_protein")
+missing_cols <- setdiff(base, colnames(stratimp2[[i]]))
+
+#reattach the column
+stratimp2[[i]][,missing_cols] <- x[which(x$Company == i), missing_cols]
+
+# Reorder columns in the data frame
+stratimp2[[i]] <- stratimp2[[i]][, base]
+}
+
+}
+
+#must stack the companies in the correct order ("R" "D" "L" "N" "S" so 4, 1, 2, 3, 5)
+test <- rbind(stratimp2[[4]], stratimp2[[1]], stratimp2[[2]], stratimp2[[3]], stratimp2[[5]])
+
+imp2[[j]] <- test
+
+ idx<- as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
+ idx$imputed<-idx$original<-NA
 for(i in 1:nrow(idx)){
   idx$original[i]<-unlist(full[idx$row[i],idx$col[i]])
   idx$imputed[i]<-imp2[[j]][idx$row[i],idx$col[i]]
@@ -633,19 +573,19 @@ new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
 PARTIAL <- append(PARTIAL, new_list2) 
 }
 
-ncMICErf<- append(ncMICErf, list(PARTIAL = PARTIAL,
-                                    FULL = FULL))
+MICErf<- append(MICErf, list(PARTIAL = PARTIAL,
+                             FULL = FULL))
 
 #NRMSE + fullMAE
 nrmse <-list()
 fullmae<-list()
 NRMSE<-list()
 fullMAE<-list()
-for(j in 1:length(ncMICErf[["FULL"]])){
+for(j in 1:length(MICErf[["FULL"]])){
   
 placeHolder3 <- paste0( p[,j] * 100, " % missing")  
 
-xi<- as.matrix(ncMICErf[["FULL"]][[j]])
+xi<- as.matrix(MICErf[["FULL"]][[j]])
 xt<-as.matrix(SCdf[,start:end])
 xm<-as.matrix(t[[j]][,start:end]) 
   
@@ -664,11 +604,11 @@ fullMAE <- append(fullMAE, new_list2)
 #partialMAE
  partialmae <- list()  
  partialMAE<-list()
-  for(j in 1:length(ncMICErf[["PARTIAL"]])){
+  for(j in 1:length(MICErf[["PARTIAL"]])){
   placeHolder3 <- paste0( p[,j] * 100, " % missing")  
     
-  xt <- ncMICErf[["PARTIAL"]][[j]][["original"]]
-  xi <- ncMICErf[["PARTIAL"]][[j]][["imputed"]]
+  xt <- MICErf[["PARTIAL"]][[j]][["original"]]
+  xi <- MICErf[["PARTIAL"]][[j]][["imputed"]]
   
   partialmae[j] <- mean(abs(xt - xi))
   
@@ -676,48 +616,115 @@ fullMAE <- append(fullMAE, new_list2)
   partialMAE <- append(partialMAE, new_list) 
   }
  
-#External check 1 ncMICErf
+#External check 1 MICErf
 imputed<-list()
 imputedSummary<-list()
 imputedBias<-list()
 imputedBias.1 <- list()
-for(j in 1:length(ncMICErf[["FULL"]])){
+for(j in 1:length(MICErf[["FULL"]])){
   placeHolder3 <- paste0( p[,j] * 100, " % missing")  
-  imputedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = ncMICErf[["FULL"]][[j]]))
+  imputedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = MICErf[["FULL"]][[j]]))
   imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
   imputedBias[[j]]<- abs((original - imputed[[j]])/original)
   new_list <- setNames((imputedBias[[j]]), placeHolder3)
   imputedBias.1 <- append(imputedBias.1, new_list) 
 }
 
-
-
-ncMICErf<- append(ncMICErf, list(NRMSE = NRMSE,
-                                 partialMAE = partialMAE,
-                                 fullMAE = fullMAE,
-                                 imputedBias.1 = imputedBias.1,
-                                 imputedBias.2 = imputedBias.2))
-
-
- if((MCAR[1] %in% t[1]) ){
-  ncMICErf_MCAR <-ncMICErf
+#External Check 2 MICErf
+imputed<-list()
+imputedSummary<-list()
+imputedBias<-list()
+imputedBias.2 <- list()
+for(j in 1:length(MICErf[["FULL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+  imputedSummary[[j]] <- summary(lm(S_ALT ~ S_AST, data = MICErf[["FULL"]][[j]]))
+  imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
+  imputedBias[[j]]<- abs((original2 - imputed[[j]])/original2)
+  new_list <- setNames((imputedBias[[j]]), placeHolder3)
+  imputedBias.2 <- append(imputedBias.2, new_list) 
 }
 
+
+MICErf<- append(MICErf, list(NRMSE = NRMSE,
+                             partialMAE = partialMAE,
+                             fullMAE = fullMAE,
+                             imputedBias.1 = imputedBias.1,
+                             imputedBias.2 = imputedBias.2))
+
+
+res[[k]] <- MICErf
+}
+
+#nameing
+
+ if((MCAR[1] %in% t[1])){
+   missing<-"_MCAR"
+ }
+
 if((MAR[1] %in% t[1]) ){
-  ncMICErf_MAR <-ncMICErf
+  missing <-"_MAR"
 }
 
 if((MNAR[1] %in% t[1]) ){
-  ncMICErf_MNAR <-ncMICErf
+  missing <-"_MNAR"
 }
+
+if(length(impcols) == 1){
+   impco<- "_Company"
+ }
+
+if(length(impcols) > 1 && !("Toxin" %in% impcols)){
+  impco<- "_All"
+  }
+
+if(length(impcols) > 1 && "Toxin" %in% impcols){
+  impco<- "_All_Toxin"
+  }
+
+ if(length(impcols) < 1){
+   impco<-"_noMeta"
+ }
+
+list_name <- paste("MICErf_strata", missing, impco, sep = "")
+assign(list_name, res, envir = .GlobalEnv)
+
+
+n_entries <- length(res)
+metrics <- c("NRMSE", "partialMAE", "fullMAE", "imputedBias.1", "imputedBias.2")
+
+# Initialize a list to store the results
+results <- list()
+
+# Loop through the metrics
+for (metric in metrics) {
+  result_matrix <- matrix(NA, nrow = n_entries, ncol = length(res[[1]][[metric]]))
+  
+  # Loop through the list and extract the current metric values into the matrix
+  for (i in 1:n_entries) {
+    result_matrix[i, ] <- unlist(res[[i]][[metric]])
+  }
+  
+  # Calculate mean and standard deviation for each column
+  mean_values <- apply(result_matrix, 2, mean)
+  std_dev_values <- apply(result_matrix, 2, sd)
+  
+  results[[metric]] <- list(mean = mean_values, std_dev = std_dev_values)
+}
+
+list_name <- paste("summary_MICErf_strata", missing, impco, sep = "")
+assign(list_name, results, envir = .GlobalEnv)
+
 
 
 ```
-clinchem_params + doseFlag + animal_no + timepoint + sacrifice + company
 ##missForest
-###missForest with ClinChem
+###missForest 
 ```{r}
 
+
+res<-list()
+for(k in 1:20){
+  
 FULL<-list()
 PARTIAL <- list()
 missForest<-list()
@@ -730,8 +737,20 @@ for(j in 1:length(t)){
   placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
   placeHolder3<- paste0("NRMSE ", p[j] * 100, " % missing")
   
+if(length(impcols) == 1){
+   x<-as.data.frame(SCdf[,impcols])
+   colnames(x) <- c("Company")
+ }
+
+  if(length(impcols) > 1){
+   x<-SCdf[,impcols]
+  }
+
+   if(length(impcols) < 1){
+   x<-as.data.frame(rep_len(x = 1, length.out = nrow(SCdf)))
+ }  
+  
   #make predictors factors (can also be numeric, just not characters, max of 53 categories per variable allowed)
- x<-SCdf[,impcols]
  x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
  
  #set up data frame used in imputation 
@@ -747,7 +766,7 @@ idx<- as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
 idx$imputed<-idx$original<-NA
 
 #start and end criteria 
-start2 <- ncol(SCdf[,impcols]) +1
+start2 <- which(colnames(x) == "S_Creatinine")
 end2 <- ncol(x)
 
 for(i in 1:nrow(idx)){
@@ -818,12 +837,12 @@ imputedSummary<-list()
 imputedBias<-list()
 imputedBias.1 <- list()
 for(j in 1:length(missForest[["FULL"]])){
-  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")
   imputedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = missForest[["FULL"]][[j]]))
   imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
   imputedBias[[j]]<- abs((original - imputed[[j]])/original)
   new_list <- setNames((imputedBias[[j]]), placeHolder3)
-  imputedBias.1 <- append(imputedBias.1, new_list) 
+  imputedBias.1 <- append(imputedBias.1, new_list)
 }
 
 #External check 2 missForest
@@ -832,37 +851,338 @@ imputedSummary<-list()
 imputedBias<-list()
 imputedBias.2 <- list()
 for(j in 1:length(missForest[["FULL"]])){
-  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")
   imputedSummary[[j]] <- summary(lm(S_ALT ~ S_AST, data = missForest[["FULL"]][[j]]))
   imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
   imputedBias[[j]]<- abs((original2 - imputed[[j]])/original2)
   new_list <- setNames((imputedBias[[j]]), placeHolder3)
-  imputedBias.2 <- append(imputedBias.2, new_list) 
+  imputedBias.2 <- append(imputedBias.2, new_list)
 }
  
 missForest<- append(missForest, list(NRMSE =NRMSE,
                                      partialMAE = partialMAE,
-                                     fullMAE = fullMAE,
-                                     imputedBias.1 = imputedBias.1,
-                                     imputedBias.2 = imputedBias.2))  
+                                     fullMAE = fullMAE ,
+                                      imputedBias.1 = imputedBias.1,
+                                      imputedBias.2 = imputedBias.2
+                                     ))  
 
-
-
+res[[k]] <- missForest
+}
 #nameing
 
- if((MCAR[1] %in% t[1]) ){
-  missForest_MCAR <-missForest
-}
+ if((MCAR[1] %in% t[1])){
+   missing<-"_MCAR"
+ }
 
 if((MAR[1] %in% t[1]) ){
-  missForest_MAR <-missForest
+  missing <-"_MAR"
 }
 
 if((MNAR[1] %in% t[1]) ){
-  missForest_MNAR <-missForest
+  missing <-"_MNAR"
 }
 
+if(length(impcols) == 1){
+   impco<- "_Company"
+ }
+
+if(length(impcols) > 1 && !("Toxin" %in% impcols)){
+  impco<- "_All"
+  }
+
+if(length(impcols) > 1 && "Toxin" %in% impcols){
+  impco<- "_All_Toxin"
+  }
+
+ if(length(impcols) < 1){
+   impco<-"_noMeta"
+ }
+
+list_name <- paste("missForest", missing, impco, sep = "")
+assign(list_name, res, envir = .GlobalEnv)
+
+n_entries <- length(res)
+metrics <- c("NRMSE", "partialMAE", "fullMAE", "imputedBias.1", "imputedBias.2")
+
+# Initialize a list to store the results
+results <- list()
+
+# Loop through the metrics
+for (metric in metrics) {
+  result_matrix <- matrix(NA, nrow = n_entries, ncol = length(res[[1]][[metric]]))
+  
+  # Loop through the list and extract the current metric values into the matrix
+  for (i in 1:n_entries) {
+    result_matrix[i, ] <- unlist(res[[i]][[metric]])
+  }
+  
+  # Calculate mean and standard deviation for each column
+  mean_values <- apply(result_matrix, 2, mean)
+  std_dev_values <- apply(result_matrix, 2, sd)
+  
+  results[[metric]] <- list(mean = mean_values, std_dev = std_dev_values)
+}
+
+list_name <- paste("summary_missForest", missing, impco, sep = "")
+assign(list_name, results, envir = .GlobalEnv)
+
 ```
+
+###missForest strata
+```{r}
+
+
+res<-list()
+for(k in 1:20){
+  
+FULL<-list()
+PARTIAL <- list()
+missForest<-list()
+imp <- list()
+imputedonly<-list()
+nrmse<-list()
+NRMSE<-list()
+for(j in 1:length(t)){
+  placeHolder <- paste0("FULLimputed ", p[j] * 100, " %")
+  placeHolder2 <- paste0("imputed vs full ", p[j] * 100, " %")
+  placeHolder3<- paste0("NRMSE ", p[j] * 100, " % missing")
+  
+  
+  if(length(impcols) == 1){
+   x<-as.data.frame(SCdf[,impcols])
+   colnames(x) <- c("Company")
+ }
+
+  if(length(impcols) > 1){
+   x<-SCdf[,impcols]
+  }
+
+   if(length(impcols) < 1){
+   x<-as.data.frame(rep_len(x = 1, length.out = nrow(SCdf)))
+ }
+  #make predictors factors (can also be numeric, just not characters, max of 53 categories per variable allowed)
+
+ x[sapply(x, is.character)] <- lapply(x[sapply(x, is.character)], as.factor)
+ 
+ #set up data frame used in imputation 
+ x <- cbind(x,t[[1]][,start:end])
+ 
+ #impute
+ 
+  ##################
+#rm(stratimp)
+stratimp2<- list()
+companies <- c("D", "L", "N", "R", "S")
+
+for (z in 1:5) {
+  stratimp2[[z]] <- missForest(xmis = x[x$Company == companies[z], ], ntree = 10, variablewise = FALSE)
+}
+test <- rbind(stratimp2[[1]][["ximp"]], stratimp2[[2]][["ximp"]], stratimp2[[3]][["ximp"]], stratimp2[[4]][["ximp"]], stratimp2[[5]][["ximp"]])
+
+imp[[j]] <- test
+
+ ##################
+ #imp[[j]] <- missForest(xmis = x, ntree = 10, variablewise = F)
+ 
+ #locate where in the complete data the NAs were created
+idx<- as.data.frame(which(is.na(t[[j]][,start:end]), arr.ind=TRUE))
+
+#make empty list to fill with original and imputed
+idx$imputed<-idx$original<-NA
+
+#start and end criteria 
+start2 <- which(colnames(x) == "S_Creatinine")
+end2 <- ncol(x)
+
+for(i in 1:nrow(idx)){
+  
+  #fill original column
+  idx$original[i]<-full[idx$row[i],idx$col[i]]
+  #fill imputed column
+  idx$imputed[i]<-imp[[j]][,start2:end2][idx$row[i],idx$col[i]]
+  #store imputed only for each percentage of missingness
+  imputedonly[[j]]<-idx
+}
+
+new_list <- setNames(list(imp[[j]][,start2:end2]), placeHolder)
+FULL <- append(FULL, new_list)  
+
+ new_list2 <- setNames(list(imputedonly[[j]]), placeHolder2)
+ PARTIAL <- append(PARTIAL, new_list2) 
+
+}
+
+missForest<- append(missForest, list(PARTIAL = PARTIAL,
+                                     FULL = FULL
+                                     ))
+
+#NRMSE + fullMAE
+nrmse <-list()
+fullmae<-list()
+NRMSE<-list()
+fullMAE<-list()
+for(j in 1:length(missForest[["FULL"]])){
+  
+placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+
+xi<- as.matrix(missForest[["FULL"]][[j]])
+xt<-as.matrix(SCdf[,start:end])
+xm<-as.matrix(t[[j]][,start:end]) 
+  
+nrmse[[j]]<-missForest::nrmse(ximp = xi, xmis = xm, xtrue = xt)
+
+new_list <- setNames((nrmse[j]), placeHolder3)
+NRMSE <- append(NRMSE, new_list) 
+
+fullmae[j] <- mean(abs(xt - xi))
+
+new_list2 <- setNames((fullmae[j]), placeHolder3)
+fullMAE <- append(fullMAE, new_list2) 
+
+}
+ 
+#partialMAE
+ partialmae <- list()  
+ partialMAE<-list()
+  for(j in 1:length(missForest[["PARTIAL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")  
+    
+  xt <- missForest[["PARTIAL"]][[j]][["original"]]
+  xi <- missForest[["PARTIAL"]][[j]][["imputed"]]
+  
+  partialmae[j] <- mean(abs(xt - xi))
+  
+  new_list <- setNames((partialmae[j]), placeHolder3)
+  partialMAE <- append(partialMAE, new_list) 
+  }
+ 
+#External check 1 missForest
+imputed<-list()
+imputedSummary<-list()
+imputedBias<-list()
+imputedBias.1 <- list()
+for(j in 1:length(missForest[["FULL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")
+  imputedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = missForest[["FULL"]][[j]]))
+  imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
+  imputedBias[[j]]<- abs((original - imputed[[j]])/original)
+  new_list <- setNames((imputedBias[[j]]), placeHolder3)
+  imputedBias.1 <- append(imputedBias.1, new_list)
+}
+
+#External check 2 missForest
+imputed<-list()
+imputedSummary<-list()
+imputedBias<-list()
+imputedBias.2 <- list()
+for(j in 1:length(missForest[["FULL"]])){
+  placeHolder3 <- paste0( p[,j] * 100, " % missing")
+  imputedSummary[[j]] <- summary(lm(S_ALT ~ S_AST, data = missForest[["FULL"]][[j]]))
+  imputed[[j]] <-imputedSummary[[j]][["coefficients"]][2,1]
+  imputedBias[[j]]<- abs((original2 - imputed[[j]])/original2)
+  new_list <- setNames((imputedBias[[j]]), placeHolder3)
+  imputedBias.2 <- append(imputedBias.2, new_list)
+}
+ 
+missForest<- append(missForest, list(NRMSE =NRMSE,
+                                     partialMAE = partialMAE,
+                                     fullMAE = fullMAE ,
+                                      imputedBias.1 = imputedBias.1,
+                                      imputedBias.2 = imputedBias.2
+                                     ))  
+
+res[[k]] <- missForest
+}
+#nameing
+
+ if((MCAR[1] %in% t[1])){
+   missing<-"_MCAR"
+ }
+
+if((MAR[1] %in% t[1]) ){
+  missing <-"_MAR"
+}
+
+if((MNAR[1] %in% t[1]) ){
+  missing <-"_MNAR"
+}
+
+if(length(impcols) == 1){
+   impco<- "_Company"
+ }
+
+if(length(impcols) > 1 && !("Toxin" %in% impcols)){
+  impco<- "_All"
+  }
+
+if(length(impcols) > 1 && "Toxin" %in% impcols){
+  impco<- "_All_Toxin"
+  }
+
+ if(length(impcols) < 1){
+   impco<-"_noMeta"
+ }
+
+list_name <- paste("missForest_strata", missing, impco, sep = "")
+assign(list_name, res, envir = .GlobalEnv)
+
+n_entries <- length(res)
+metrics <- c("NRMSE", "partialMAE", "fullMAE", "imputedBias.1", "imputedBias.2")
+
+# Initialize a list to store the results
+results <- list()
+
+# Loop through the metrics
+for (metric in metrics) {
+  result_matrix <- matrix(NA, nrow = n_entries, ncol = length(res[[1]][[metric]]))
+  
+  # Loop through the list and extract the current metric values into the matrix
+  for (i in 1:n_entries) {
+    result_matrix[i, ] <- unlist(res[[i]][[metric]])
+  }
+  
+  # Calculate mean and standard deviation for each column
+  mean_values <- apply(result_matrix, 2, mean)
+  std_dev_values <- apply(result_matrix, 2, sd)
+  
+  results[[metric]] <- list(mean = mean_values, std_dev = std_dev_values)
+}
+
+list_name <- paste("summary_missForest_strata", missing, impco, sep = "")
+assign(list_name, results, envir = .GlobalEnv)
+
+```
+
+
+```{r}
+save(
+       summary_MICErf_MNAR_All,
+summary_MICErf_MNAR_All_Toxin,
+       summary_MICErf_MNAR_Company,
+       summary_MICErf_MNAR_noMeta,
+               summary_MICErf_strata_MNAR_All,
+               summary_MICErf_strata_MNAR_Company,
+       summary_missForest_MNAR_All,
+       summary_missForest_MNAR_Company,
+       summary_missForest_MNAR_noMeta,
+               summary_missForest_strata_MNAR_All,
+               summary_missForest_strata_MNAR_Company,
+       MICErf_MNAR_All,
+MICErf_MNAR_All_Toxin,
+       MICErf_MNAR_Company,
+       MICErf_MNAR_noMeta,
+               MICErf_strata_MNAR_All,
+               MICErf_strata_MNAR_Company,
+       missForest_MNAR_All,
+       missForest_MNAR_Company,
+       missForest_MNAR_noMeta,
+               missForest_strata_MNAR_All,
+               missForest_strata_MNAR_Company,
+     file = "MNAR500iteration.Rdata")
+
+```
+
+
 ###missForest without ClinChem
 ```{r}
 

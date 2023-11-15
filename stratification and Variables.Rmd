@@ -110,6 +110,8 @@ impcols <- c("Company"
              # "Toxin"
              )
 
+SCdf<- full500
+
 #"Company"            "Study_id"           "Toxin"              "Target"                      "Animal_no."         "Timepoint"          "Sacrifice_subgroup"        "doseFlag" 
 
 #column to begin creating missingness

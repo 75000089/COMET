@@ -28,34 +28,34 @@ library(reshape2)
 ```{r}
 
 
-imputedBias.1_MNAR_mean <-
+imputedBias.2_MNAR_mean <-
 cbind(
-summary_MICErf_MNAR_All[["imputedBias.1"]][["mean"]],
-summary_MICErf_MNAR_All_Toxin[["imputedBias.1"]][["mean"]],
-summary_MICErf_MNAR_Company[["imputedBias.1"]][["mean"]],
-summary_MICErf_MNAR_noMeta[["imputedBias.1"]][["mean"]],
-summary_MICErf_strata_MNAR_Company[["imputedBias.1"]][["mean"]],
-summary_MICErf_strata_MNAR_All[["imputedBias.1"]][["mean"]],
-summary_missForest_MNAR_All[["imputedBias.1"]][["mean"]],
-summary_missForest_MNAR_Company[["imputedBias.1"]][["mean"]],
-summary_missForest_MNAR_noMeta[["imputedBias.1"]][["mean"]],
-summary_missForest_strata_MNAR_Company[["imputedBias.1"]][["mean"]],
-summary_missForest_strata_MNAR_All[["imputedBias.1"]][["mean"]]
+summary_MICErf_MNAR_All[["imputedBias.2"]][["mean"]],
+summary_MICErf_MNAR_All_Toxin[["imputedBias.2"]][["mean"]],
+summary_MICErf_MNAR_Company[["imputedBias.2"]][["mean"]],
+summary_MICErf_MNAR_noMeta[["imputedBias.2"]][["mean"]],
+  #summary_MICErf_strata_MNAR_Company[["imputedBias.2"]][["mean"]],
+  #summary_MICErf_strata_MNAR_All[["imputedBias.2"]][["mean"]],
+summary_missForest_MNAR_All[["imputedBias.2"]][["mean"]],
+summary_missForest_MNAR_Company[["imputedBias.2"]][["mean"]],
+summary_missForest_MNAR_noMeta[["imputedBias.2"]][["mean"]],
+summary_missForest_strata_MNAR_Company[["imputedBias.2"]][["mean"]],
+summary_missForest_strata_MNAR_All[["imputedBias.2"]][["mean"]]
 )
 
-imputedBias.1_MNAR_std<- 
+imputedBias.2_MNAR_std<- 
 cbind(
-summary_MICErf_MNAR_All[["imputedBias.1"]][["std_dev"]],
-summary_MICErf_MNAR_All_Toxin[["imputedBias.1"]][["std_dev"]],
-summary_MICErf_MNAR_Company[["imputedBias.1"]][["std_dev"]],
-summary_MICErf_MNAR_noMeta[["imputedBias.1"]][["std_dev"]],
-summary_MICErf_strata_MNAR_Company[["imputedBias.1"]][["std_dev"]],
-summary_MICErf_strata_MNAR_All[["imputedBias.1"]][["std_dev"]],
-summary_missForest_MNAR_All[["imputedBias.1"]][["std_dev"]],
-summary_missForest_MNAR_Company[["imputedBias.1"]][["std_dev"]],
-summary_missForest_MNAR_noMeta[["imputedBias.1"]][["std_dev"]],
-summary_missForest_strata_MNAR_Company[["imputedBias.1"]][["std_dev"]],
-summary_missForest_strata_MNAR_All[["imputedBias.1"]][["std_dev"]]
+summary_MICErf_MNAR_All[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MNAR_All_Toxin[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MNAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MNAR_noMeta[["imputedBias.2"]][["std_dev"]],
+  #summary_MICErf_strata_MNAR_Company[["imputedBias.2"]][["std_dev"]],
+  #summary_MICErf_strata_MNAR_All[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MNAR_All[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MNAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MNAR_noMeta[["imputedBias.2"]][["std_dev"]],
+summary_missForest_strata_MNAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_missForest_strata_MNAR_All[["imputedBias.2"]][["std_dev"]]
                   )
 
 rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
@@ -63,36 +63,36 @@ cn<- c("MICErf_All",
        "MICErf_All_Toxin", 
        "MICErf_Company", 
        "MICErf_noMeta", 
-       "MICErf_strata_Company", 
-       "MICErf_strata_All", 
+          #"MICErf_strata_Company", 
+          #"MICErf_strata_All", 
        "missForest_All", 
        "missForest_Company", 
        "missForest_noMeta", 
        "missForest_strata_Company", 
        "missForest_strata_All")
 
-colnames(imputedBias.1_MNAR_mean) <- cn
-rownames(imputedBias.1_MNAR_mean) <- rn
-colnames(imputedBias.1_MNAR_std) <- cn
-rownames(imputedBias.1_MNAR_std) <- rn
+colnames(imputedBias.2_MNAR_mean) <- cn
+rownames(imputedBias.2_MNAR_mean) <- rn
+colnames(imputedBias.2_MNAR_std) <- cn
+rownames(imputedBias.2_MNAR_std) <- rn
 
-test<- melt(imputedBias.1_MNAR_std)
-test2<-melt(imputedBias.1_MNAR_mean)
-mimputedBias.1_MNAR <- cbind(test2, test[3])
+test<- melt(imputedBias.2_MNAR_std)
+test2<-melt(imputedBias.2_MNAR_mean)
+mimputedBias.2_MNAR <- cbind(test2, test[3])
 
-colnames(mimputedBias.1_MNAR) <- c("Missing", "Imputation", "Mean", "std")
+colnames(mimputedBias.2_MNAR) <- c("Missing", "Imputation", "Mean", "std")
 
-mimputedBias.1_MNAR["missType"] <- "MNAR"
+mimputedBias.2_MNAR["missType"] <- "MNAR"
 ```
 
 ```{r}
 imputedBias.1<- rbind(mimputedBias.1_MCAR, mimputedBias.1_MAR, mimputedBias.1_MNAR)
-imputedBias.1$metric <- "imputedBias.2"
+imputedBias.1$metric <- "imputedBias.1"
 
-# bias1<- rbind(as.data.frame(MCARbias1), as.data.frame(MARbias1), as.data.frame(MNARbias1))
-# bias1$metric <- "imputedBias.2"
-# colnames(bias1)<- colnames(imputedBias.1)
-# bias1 <-bias1[,1:6]
+ bias1<- rbind(as.data.frame(MCARbias1), as.data.frame(MARbias1), as.data.frame(MNARbias1))
+ bias1$metric <- "imputedBias.1"
+ colnames(bias1)<- colnames(imputedBias.1)
+ bias1 <-bias1[,1:6]
 
 imputedBias.1 <- rbind(bias1, imputedBias.1)
 
@@ -101,10 +101,10 @@ imputedBias.1 <- rbind(bias1, imputedBias.1)
 imputedBias.2<- rbind(mimputedBias.2_MCAR, mimputedBias.2_MAR, mimputedBias.2_MNAR)
 imputedBias.2$metric <- "imputedBias.2"
 
-# bias2<- rbind(as.data.frame(MCARbias2), as.data.frame(MARbias2), as.data.frame(MNARbias2))
-# bias2$metric <- "imputedBias.2"
-# colnames(bias2)<- colnames(imputedBias.2)
-# bias2 <-bias2[,1:6]
+ bias2<- rbind(as.data.frame(MCARbias2), as.data.frame(MARbias2), as.data.frame(MNARbias2))
+ bias2$metric <- "imputedBias.2"
+ colnames(bias2)<- colnames(imputedBias.2)
+ bias2 <-bias2[,1:6]
 
 imputedBias.2 <- rbind(bias2, imputedBias.2)
 
@@ -131,10 +131,10 @@ ExternalData$std<-(unlist(ExternalData$std))
 ExternalData$metric<-(unlist(ExternalData$metric))
 ExternalData$metric<-factor(ExternalData$metric)
 
-ExternalData2769<- ExternalData
-ExternalData2769$sampleSize <- 2769
+ExternalData50<- ExternalData
+ExternalData50$sampleSize <- 50
 
-save(ExternalData2769, file = "ExternalMetricPlotData2769.Rdata")
+save(ExternalData50, file = "ExternalMetricPlotData50.Rdata")
 
 ```
 
@@ -142,34 +142,34 @@ save(ExternalData2769, file = "ExternalMetricPlotData2769.Rdata")
 ```{r}
 
 
-partialMAE_MCAR_mean <-
+partialMAE_MNAR_mean <-
 cbind(
-summary_MICErf_MCAR_All[["partialMAE"]][["mean"]],
-summary_MICErf_MCAR_All_Toxin[["partialMAE"]][["mean"]],
-summary_MICErf_MCAR_Company[["partialMAE"]][["mean"]],
-summary_MICErf_MCAR_noMeta[["partialMAE"]][["mean"]],
-summary_MICErf_strata_MCAR_Company[["partialMAE"]][["mean"]],
-summary_MICErf_strata_MCAR_All[["partialMAE"]][["mean"]],
-summary_missForest_MCAR_All[["partialMAE"]][["mean"]],
-summary_missForest_MCAR_Company[["partialMAE"]][["mean"]],
-summary_missForest_MCAR_noMeta[["partialMAE"]][["mean"]],
-summary_missForest_strata_MCAR_Company[["partialMAE"]][["mean"]],
-summary_missForest_strata_MCAR_All[["partialMAE"]][["mean"]]
+summary_MICErf_MNAR_All[["partialMAE"]][["mean"]],
+summary_MICErf_MNAR_All_Toxin[["partialMAE"]][["mean"]],
+summary_MICErf_MNAR_Company[["partialMAE"]][["mean"]],
+summary_MICErf_MNAR_noMeta[["partialMAE"]][["mean"]],
+   #summary_MICErf_strata_MNAR_Company[["partialMAE"]][["mean"]],
+   #summary_MICErf_strata_MNAR_All[["partialMAE"]][["mean"]],
+summary_missForest_MNAR_All[["partialMAE"]][["mean"]],
+summary_missForest_MNAR_Company[["partialMAE"]][["mean"]],
+summary_missForest_MNAR_noMeta[["partialMAE"]][["mean"]],
+summary_missForest_strata_MNAR_Company[["partialMAE"]][["mean"]],
+summary_missForest_strata_MNAR_All[["partialMAE"]][["mean"]]
 )
 
-partialMAE_MCAR_std<- 
+partialMAE_MNAR_std<- 
 cbind(
-summary_MICErf_MCAR_All[["partialMAE"]][["std_dev"]],
-summary_MICErf_MCAR_All_Toxin[["partialMAE"]][["std_dev"]],
-summary_MICErf_MCAR_Company[["partialMAE"]][["std_dev"]],
-summary_MICErf_MCAR_noMeta[["partialMAE"]][["std_dev"]],
-summary_MICErf_strata_MCAR_Company[["partialMAE"]][["std_dev"]],
-summary_MICErf_strata_MCAR_All[["partialMAE"]][["std_dev"]],
-summary_missForest_MCAR_All[["partialMAE"]][["std_dev"]],
-summary_missForest_MCAR_Company[["partialMAE"]][["std_dev"]],
-summary_missForest_MCAR_noMeta[["partialMAE"]][["std_dev"]],
-summary_missForest_strata_MCAR_Company[["partialMAE"]][["std_dev"]],
-summary_missForest_strata_MCAR_All[["partialMAE"]][["std_dev"]]
+summary_MICErf_MNAR_All[["partialMAE"]][["std_dev"]],
+summary_MICErf_MNAR_All_Toxin[["partialMAE"]][["std_dev"]],
+summary_MICErf_MNAR_Company[["partialMAE"]][["std_dev"]],
+summary_MICErf_MNAR_noMeta[["partialMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MNAR_Company[["partialMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MNAR_All[["partialMAE"]][["std_dev"]],
+summary_missForest_MNAR_All[["partialMAE"]][["std_dev"]],
+summary_missForest_MNAR_Company[["partialMAE"]][["std_dev"]],
+summary_missForest_MNAR_noMeta[["partialMAE"]][["std_dev"]],
+summary_missForest_strata_MNAR_Company[["partialMAE"]][["std_dev"]],
+summary_missForest_strata_MNAR_All[["partialMAE"]][["std_dev"]]
                   )
 
 rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
@@ -177,26 +177,27 @@ cn<- c("MICErf_All",
        "MICErf_All_Toxin", 
        "MICErf_Company", 
        "MICErf_noMeta", 
-       "MICErf_strata_Company", 
-       "MICErf_strata_All", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
        "missForest_All", 
        "missForest_Company", 
-       "missForest_noMeta", 
-       "missForest_strata_Company", 
-       "missForest_strata_All")
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
 
-colnames(partialMAE_MCAR_mean) <- cn
-rownames(partialMAE_MCAR_mean) <- rn
-colnames(partialMAE_MCAR_std) <- cn
-rownames(partialMAE_MCAR_std) <- rn
+colnames(partialMAE_MNAR_mean) <- cn
+rownames(partialMAE_MNAR_mean) <- rn
+colnames(partialMAE_MNAR_std) <- cn
+rownames(partialMAE_MNAR_std) <- rn
 
-test<- melt(partialMAE_MCAR_std)
-test2<-melt(partialMAE_MCAR_mean)
-mpartialMAE_MCAR <- cbind(test2, test[3])
+test<- melt(partialMAE_MNAR_std)
+test2<-melt(partialMAE_MNAR_mean)
+mpartialMAE_MNAR <- cbind(test2, test[3])
 
-colnames(mpartialMAE_MCAR) <- c("Missing", "Imputation", "Mean", "std")
+colnames(mpartialMAE_MNAR) <- c("Missing", "Imputation", "Mean", "std")
 
-mpartialMAE_MCAR["missType"] <- "MCAR"
+mpartialMAE_MNAR["missType"] <- "MNAR"
 ```
 
 ```{r}
@@ -209,10 +210,10 @@ fullMAE$metric <- "fullMAE"
 partialMAE<- rbind(mpartialMAE_MCAR, mpartialMAE_MAR, mpartialMAE_MNAR)
 partialMAE$metric <- "partialMAE"
 
-InternalData2769<- rbind(NRMSE, fullMAE, InternalData)
-InternalData2769$sampleSize <- 2769
+InternalData50<- rbind(NRMSE, fullMAE, partialMAE)
+InternalData50$sampleSize <- 50
 
-save(InternalData2769, file = "InternalMetricPlotData2769.Rdata")
+save(InternalData50, file = "InternalMetricPlotData50.Rdata")
 ```
 
 
@@ -247,10 +248,44 @@ sfm <- scale_fill_manual(values = c(
   "missForest_strata_Company" = "#f15408",
   "missForest_strata_All" = "#a51407")) 
 
+
+scm <- scale_color_manual(values = c(
+    "incomplete" ="pink",
+  "MICErf_All" = "#2dff2a", 
+  "MICErf_All_Toxin" = "#2dff2a", 
+  "MICErf_Company" = "#2dff2a" , 
+  "MICErf_noMeta" = "#2dff2a" , 
+  "MICErf_strata_Company" = "#2dff2a", 
+  "MICErf_strata_All" = "#2dff2a", 
+  "missForest_All" = "orange" ,
+  "missForest_Company" = "blue" , 
+  "missForest_noMeta" = "black", 
+  "missForest_strata_Company" = "purple",
+  "missForest_strata_All" = "red")) 
+sfm <- scale_fill_manual(values = c(
+   "incomplete" ="pink",
+  "MICErf_All" = "#2dff2a", 
+  "MICErf_All_Toxin" = "#2dff2a", 
+  "MICErf_Company" = "#2dff2a" , 
+  "MICErf_noMeta" = "#2dff2a" , 
+  "MICErf_strata_Company" = "#2dff2a", 
+  "MICErf_strata_All" = "#2dff2a", 
+  "missForest_All" = "orange" ,
+  "missForest_Company" = "blue" , 
+  "missForest_noMeta" = "black", 
+  "missForest_strata_Company" = "purple",
+  "missForest_strata_All" = "red")) 
+
 ```
 ##External
 ```{r}
-mainExternalPlot <- ggplot(data = ExternalData2769, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
+
+levels(ExternalData2769$metric)[levels(ExternalData2769$metric) == "imputedBias.1"] <- "Total Protein vs Albumin Bias"
+levels(ExternalData2769$metric)[levels(ExternalData2769$metric) == "imputedBias.2"] <- "AST vs ALT Bias"
+
+
+mainExternalPlot <- 
+  ggplot(data = ExternalData2769, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
   geom_point(size = 2) +
   geom_line(aes(group = Imputation)) +
   geom_ribbon(aes(x = Missing,
@@ -263,31 +298,27 @@ mainExternalPlot <- ggplot(data = ExternalData2769, aes(x = Missing, y = Mean, c
                 labs(x = "Missing",
                      colour = "Imputation") +
                 theme_bw() + 
-                  theme(axis.title.y = element_blank(),
-                        legend.position = "bottom",
+                  theme(legend.position = "none",
+                    axis.title.y = element_blank(),
+                        strip.placement = "outside",
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
-                        axis.title.x = element_blank(),
+                        #axis.title.x = element_blank(),
                         panel.spacing = unit(0, "lines")) +
-   facet_grid(metric~missType, scales = "free_y")+
+   facet_grid(metric~missType, scales = "free_y", switch ="y")+
    scm +
-   sfm
+   sfm +
+   xlab("Missing %") 
                 
 ggsave(file=paste("External plot main.pdf",sep=""), plot=mainExternalPlot, height = 6, width = 9)
 ggsave(file=paste("External plot main.svg",sep=""), plot=mainExternalPlot, height = 6, width = 9)
-
-
-test <- ExternalData2769[which(ExternalData2769$metric=="imputedBias.1"),]
-test<- test[which(test$missType=="MCAR"),]
-test <- test[which(test$Imputation == "missForest_All"),]
-ggplot(data = test, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
-  geom_point(size = 2)
 
 ```
 
 ##Internal
 ```{r}
-mainInternalPlot<- ggplot(data = InternalData2769, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
+mainInternalPlot<- 
+  ggplot(data = InternalData2769, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
                     geom_point(size = 2) +
                     geom_line(aes(group = Imputation)) +
                     geom_ribbon(aes(x = Missing,
@@ -300,15 +331,30 @@ mainInternalPlot<- ggplot(data = InternalData2769, aes(x = Missing, y = Mean, co
                                   labs(x = "Missing",
                                        colour = "Imputation") +
                                   theme_bw() + 
-                                    theme(axis.title.y = element_blank(),
-                                          legend.position = "none",
+                                    theme(
+                                      axis.title.y = element_blank(),
+                                      strip.placement = "outside",
+                                          legend.position = "bottom",
                                           strip.background = element_rect(fill = "white", 
                                                                           color = "white"),
-                                          axis.title.x = element_blank(),
+                                          #axis.title.x = element_blank(),
                                           panel.spacing = unit(0, "lines")) +
-                     facet_grid(metric~missType, scales = "free_y")+
+                     facet_grid(metric~missType, scales = "free_y", switch = "y")+
                     scm +
-                    sfm
+                    sfm + 
+  xlab("Missing %") 
+
+
+leg <- get_legend(mainInternalPlot)
+
+# Convert to a ggplot and print
+internalLegend <- as_ggplot(leg)
+
+mainInternalPlot <- mainInternalPlot + theme(legend.position = "none")    
+
+
+ggsave(file=paste("InternalLegend.pdf",sep=""), plot=internalLegend, width = 9)
+ggsave(file=paste("InternalLegend.svg",sep=""), plot=internalLegend, width = 9)
 
 ggsave(file=paste("Internal plot main.pdf",sep=""), plot=mainInternalPlot, height = 9, width = 9)
 ggsave(file=paste("Internal plot main.svg",sep=""), plot=mainInternalPlot, height = 9, width = 9)
@@ -324,9 +370,9 @@ ggsave(file=paste("Internal plot main.svg",sep=""), plot=mainInternalPlot, heigh
 
 idx <- InternalData2769[which(InternalData2769$metric == "NRMSE"),]
 idy <- InternalData500[which(InternalData500$metric == "NRMSE"),]
-idx <- InternalData50[which(InternalData50$metric == "NRMSE"),]
+idz <- InternalData50[which(InternalData50$metric == "NRMSE"),]
 
-NRMSE <- rbind(InternalData2769[idx,], InternalData500[idy,], InternalData50[idz,])
+NRMSE <- rbind(idx, idy,idz)
 
 
 supmatNRMSE <- ggplot(data = NRMSE, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
@@ -372,9 +418,9 @@ ggsave(file=paste("InternalLegend.svg",sep=""), plot=internalLegend, width = 9)
 ############################################################################# fullMAE
 idx <- InternalData2769[which(InternalData2769$metric == "fullMAE"),]
 idy <- InternalData500[which(InternalData500$metric == "fullMAE"),]
-idx <- InternalData50[which(InternalData50$metric == "fullMAE"),]
+idz <- InternalData50[which(InternalData50$metric == "fullMAE"),]
 
-fullMAE <- rbind(InternalData2769[idx,], InternalData500[idy,], InternalData50[idz,])
+fullMAE <- rbind(idx, idy, idz)
 
 
 supmatfullMAE <- ggplot(data = fullMAE, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
@@ -391,7 +437,7 @@ supmatfullMAE <- ggplot(data = fullMAE, aes(x = Missing, y = Mean, color = Imput
                      colour = "Imputation") +
                 theme_bw() + 
                   theme(axis.title.y = element_blank(),
-                        legend.position = "none",
+                        legend.position = "bottom",
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
                         axis.title.x = element_blank(),
@@ -411,9 +457,9 @@ ggsave(file=paste("fullMAE supmat.svg",sep=""), plot=supmatfullMAE, height = 9, 
 
 idx <- InternalData2769[which(InternalData2769$metric == "partialMAE"),]
 idy <- InternalData500[which(InternalData500$metric == "partialMAE"),]
-idx <- InternalData50[which(InternalData50$metric == "partialMAE"),]
+idz <- InternalData50[which(InternalData50$metric == "partialMAE"),]
 
-partialMAE <- rbind(InternalData2769[idx,], InternalData500[idy,], InternalData50[idz,])
+partialMAE <- rbind(idx, idy, idz)
 
 
 supmatpartialMAE <- ggplot(data = partialMAE, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
@@ -430,7 +476,7 @@ supmatpartialMAE <- ggplot(data = partialMAE, aes(x = Missing, y = Mean, color =
                      colour = "Imputation") +
                 theme_bw() + 
                   theme(axis.title.y = element_blank(),
-                        legend.position = "none",
+                        legend.position = "bottom",
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
                         axis.title.x = element_blank(),
@@ -446,14 +492,14 @@ ggsave(file=paste("partialMAE supmat.svg",sep=""), plot=supmatpartialMAE, height
 ##bias 1
 ```{r}
 ############################################################################# imputedBias.1
-idx <- InternalData2769[which(InternalData2769$metric == "imputedBias.1"),]
-idy <- InternalData500[which(InternalData500$metric == "imputedBias.1"),]
-idx <- InternalData50[which(InternalData50$metric == "imputedBias.1"),]
+idx <- ExternalData2769[which(ExternalData2769$metric == "imputedBias.1"),]
+idy <- ExternalData500[which(ExternalData500$metric == "imputedBias.1"),]
+idz <- ExternalData50[which(ExternalData50$metric == "imputedBias.1"),]
 
-imputedBias.1 <- rbind(InternalData2769[idx,], InternalData500[idy,], InternalData50[idz,])
+imputedBias.1 <- rbind(idx, idy,idz)
 
 
-supmatimputedBias.1 <- ggplot(data = partialMAE, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
+supmatimputedBias.1 <- ggplot(data = imputedBias.1, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
   geom_point(size = 2) +
   geom_line(aes(group = Imputation)) +
   geom_ribbon(aes(x = Missing,
@@ -493,14 +539,14 @@ ggsave(file=paste("ExternalLegend.svg",sep=""), plot=externalLegend, width = 9)
 ```{r}
 ############################################################################# imputedBias.2
 
-idx <- InternalData2769[which(InternalData2769$metric == "imputedBias.2"),]
-idy <- InternalData500[which(InternalData500$metric == "imputedBias.2"),]
-idx <- InternalData50[which(InternalData50$metric == "imputedBias.2"),]
+idx <- ExternalData2769[which(ExternalData2769$metric == "imputedBias.2"),]
+idy <- ExternalData500[which(ExternalData500$metric == "imputedBias.2"),]
+idz <- ExternalData50[which(ExternalData50$metric == "imputedBias.2"),]
 
-imputedBias.2 <- rbind(InternalData2769[idx,], InternalData500[idy,], InternalData50[idz,])
+imputedBias.2 <- rbind(idx, idy, idz)
 
 
-supmatimputedBias.2 <- ggplot(data = partialMAE, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
+supmatimputedBias.2 <- ggplot(data = imputedBias.2, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
   geom_point(size = 2) +
   geom_line(aes(group = Imputation)) +
   geom_ribbon(aes(x = Missing,
