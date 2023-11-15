@@ -218,9 +218,9 @@ MNAR500<-MNAR
 SCdf <- SCdf500full 
 
 impcols<-
-  NULL
+  #NULL
   #"Company"
-  #c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup", "Target")
+  c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup", "Target")
   #c("Company", "Timepoint", "Animal_no.", "doseFlag", "Sacrifice_subgroup", "Target", "Toxin")
 
 #column to begin creating missingness
@@ -233,7 +233,7 @@ end<-ncol(SCdf)
 
 Need to change the way the eg CALIBER_MAR list is set up. Use paste 
 ```{r}
-t<- MNAR
+t<- MCAR
 full<-SCdf[,start:end]
 #full500<-full
 
@@ -480,11 +480,11 @@ assign(list_name, results, envir = .GlobalEnv)
 
 
 
-```
+#```
 
 ##MICErf strata
-Repeat the below process for MCAR, MAR and MNAR
-```{r}
+#Repeat the below process for MCAR, MAR and MNAR
+#```{r}
 
 
   res<-list()
@@ -716,10 +716,10 @@ assign(list_name, results, envir = .GlobalEnv)
 
 
 
-```
+#```
 ##missForest
 ###missForest 
-```{r}
+#```{r}
 
 
 res<-list()
@@ -926,10 +926,10 @@ for (metric in metrics) {
 list_name <- paste("summary_missForest", missing, impco, sep = "")
 assign(list_name, results, envir = .GlobalEnv)
 
-```
+#```
 
 ###missForest strata
-```{r}
+#```{r}
 
 
 res<-list()
@@ -1153,32 +1153,32 @@ assign(list_name, results, envir = .GlobalEnv)
 
 ```
 
-
+###Save
 ```{r}
 save(
-       summary_MICErf_MNAR_All,
-summary_MICErf_MNAR_All_Toxin,
-       summary_MICErf_MNAR_Company,
-       summary_MICErf_MNAR_noMeta,
-               summary_MICErf_strata_MNAR_All,
-               summary_MICErf_strata_MNAR_Company,
-       summary_missForest_MNAR_All,
-       summary_missForest_MNAR_Company,
-       summary_missForest_MNAR_noMeta,
-               summary_missForest_strata_MNAR_All,
-               summary_missForest_strata_MNAR_Company,
-       MICErf_MNAR_All,
-MICErf_MNAR_All_Toxin,
-       MICErf_MNAR_Company,
-       MICErf_MNAR_noMeta,
-               MICErf_strata_MNAR_All,
-               MICErf_strata_MNAR_Company,
-       missForest_MNAR_All,
-       missForest_MNAR_Company,
-       missForest_MNAR_noMeta,
-               missForest_strata_MNAR_All,
-               missForest_strata_MNAR_Company,
-     file = "MNAR500iteration.Rdata")
+       summary_MICErf_MCAR_All,
+summary_MICErf_MCAR_All_Toxin,
+       summary_MICErf_MCAR_Company,
+       summary_MICErf_MCAR_noMeta,
+               summary_MICErf_strata_MCAR_All,
+               summary_MICErf_strata_MCAR_Company,
+       summary_missForest_MCAR_All,
+       summary_missForest_MCAR_Company,
+       summary_missForest_MCAR_noMeta,
+               summary_missForest_strata_MCAR_All,
+               summary_missForest_strata_MCAR_Company,
+       MICErf_MCAR_All,
+MICErf_MCAR_All_Toxin,
+       MICErf_MCAR_Company,
+       MICErf_MCAR_noMeta,
+               MICErf_strata_MCAR_All,
+               MICErf_strata_MCAR_Company,
+       missForest_MCAR_All,
+       missForest_MCAR_Company,
+       missForest_MCAR_noMeta,
+               missForest_strata_MCAR_All,
+               missForest_strata_MCAR_Company,
+     file = "MCAR500iteration.Rdata")
 
 ```
 
