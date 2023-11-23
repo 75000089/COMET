@@ -10,6 +10,8 @@ output: html_document
 #load("~/Documents/COMET/Data/data2769.RData")
 load("~/Downloads/redo2769.Rdata")
 
+
+
 #for 500 Samples
 
 

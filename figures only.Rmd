@@ -6,6 +6,7 @@ output: html_document
 ---
 
 
+Need to run the "Make data frames" section for each sample size; 2769, 500 and 50. If this is already done, skip to "import dfs" chunk, should only need to be done once. 
 ```{r cars}
 
 
@@ -19,17 +20,497 @@ library(ggpmisc)
 library(ggpubr)
 library(reshape2)
 
+#for 2769 samples
+load("~/OneDrive - Murdoch University/COMET/COMET/redo2769.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/2769 samples/MAR2769iteration.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/2769 samples/MCAR2769iteration.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/2769 samples/MNAR2769iteration.Rdata")
 
+#for 500 samples
 
+load("~/OneDrive - Murdoch University/COMET/COMET/500 Samples/500.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/500 Samples/MAR500iteration.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/500 Samples/MCAR500iteration.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/500 Samples/MNAR500iteration.Rdata")
+
+SCdf <- SCdf500full
+MCAR<- MCAR500
+MAR <- MAR500
+MNAR<- MNAR500
+
+#for 50samples
+
+load("~/OneDrive - Murdoch University/COMET/COMET/50 Samples/50.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/50 Samples/MAR50iteration.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/50 Samples/MCAR50iteration.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/50 Samples/MNAR50iteration.Rdata")
+
+SCdf <- SCdf50full
+MCAR<- MCAR50
+MAR <- MAR50
+MNAR<- MNAR50
 
 ```
-#Make data frames
-##External
+
+#PCAs
+
+Show which has the most separation in the metadata, this is company. Is it better to have Company as a variable in imputation or to stratify by company. 
 ```{r}
 
+devtools::install_github("phenological/mva-plots")
 
+load("~/OneDrive - Murdoch University/COMET/COMET/redo2769.Rdata")
+
+a <- PCA(data= SCdf[12:22])
+
+b <- plotScores(model = a, optns = list(plotTitle = "Original",ellipse = "hotellings", color = SCdf$Company,  outlierLabels = row.names(SCdf)))
+
+idx<-which(rownames(SCdf) %in% b[["data"]][["outliers"]][["PC1vPC2"]][["outlierID"]])
+
+SCdf2<-SCdf[-idx,]
+
+c <- PCA(data= SCdf2[12:22])
+
+Toxin<- plotScores(model = c, optns = list(plotTitle = "Toxin", 
+                                                  ellipse = "color", 
+                                           colorTitle = "Toxin", 
+                                                  color = SCdf2$Toxin, 
+                                               discretePalette =c("#bef7ff", "#c0f1ff", "#c2ebff", "#c4e5ff", "#c6dfff", "#c8d9ff", "#cad3ff", "#cccdff", "#cec8ff", "#d0c2ff", "#d2bcff", "#d4b6ff", "#d6b0ff", "#d8aaff", "#daa4ff", "#dd9eff", "#df98ff", "#e192ff", "#e38cff", "#e586ff", "#e780ff", "#e97aff", "#eb75ff", "#ed6fff", "#ef69ff", "#f163ff", "#f35dff", "#f557ff", "#f751ff", "#f94bff", "#ffe434", "#fbdd34", "#f8d734", "#f4d035", "#f0c935", "#ecc235", "#e9bc35", "#e5b536", "#e1ae36", "#dda736", "#daa136", "#d69a37", "#d29337", "#cf8d37", "#cb8637", "#c77f38", "#c37838", "#c07238", "#bc6b38", "#b86439", "#b55e39", "#b15739", "#ad5039", "#a9493a", "#a6433a", "#a23c3a", "#9e353a", "#9a2e3b", "#97283b", "#93213b", "#20ff20", "#26c53d", "#2c8a5a", "#315076", "#371593"),
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1,
+                                                theme = theme(legend.position = "none")
+                                                ))
+
+
+Study_id<- plotScores(model = c, optns = list(plotTitle = "Study ID", 
+                                                  ellipse = "color", 
+                                                  color = SCdf2$Study_id, 
+                                              colorTitle = "Study ID",
+                                               discretePalette =c("#bef7ff", "#c0f1ff", "#c2ebff", "#c4e5ff", "#c6dfff", "#c8d9ff", "#cad3ff", "#cccdff", "#cec8ff", "#d0c2ff", "#d2bcff", "#d4b6ff", "#d6b0ff", "#d8aaff", "#daa4ff", "#dd9eff", "#df98ff", "#e192ff", "#e38cff", "#e586ff", "#e780ff", "#e97aff", "#eb75ff", "#ed6fff", "#ef69ff", "#f163ff", "#f35dff", "#f557ff", "#f751ff", "#f94bff", "#ffe434", "#fbdd34", "#f8d734", "#f4d035", "#f0c935", "#ecc235", "#e9bc35", "#e5b536", "#e1ae36", "#dda736", "#daa136", "#d69a37", "#d29337", "#cf8d37", "#cb8637", "#c77f38", "#c37838", "#c07238", "#bc6b38", "#b86439", "#b55e39", "#b15739", "#ad5039", "#a9493a", "#a6433a", "#a23c3a", "#9e353a", "#9a2e3b", "#97283b", "#93213b", "#20ff20", "#26c53d", "#2c8a5a", "#315076", "#371593", "red"),
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1,
+                                                theme = theme(legend.position = "none")
+                                                ))
+
+Animal_no<- plotScores(model = c, optns = list(plotTitle = "Animal Number", 
+                                                  ellipse = "color", 
+                                                  color = SCdf2$Animal_no.,
+                                               colorTitle = "Animal Number",
+                                               discretePalette =c("#ff4c15", "#f84f1d", "#f15225", "#ea552d", "#e35935", "#dc5c3d", "#d55f45", "#ce624d", "#c76556", "#c0685e", "#b96b66", "#b26f6e", "#ab7276", "#a4757e", "#9d7886", "#967b8e", "#8f7e96", "#88819e", "#8184a6", "#7a88ae", "#738bb6", "#6c8ebe", "#6591c7", "#5e94cf", "#5797d7", "#509adf", "#499ee7", "#42a1ef", "#3ba4f7", "#34a7ff"),
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1,
+                                                theme = theme(legend.position = "none")
+                                                ))
+
+Company <- plotScores(model = c, optns = list(plotTitle = "Company", 
+                                                  ellipse = "color", 
+                                                  color = SCdf2$Company, 
+                                              colorTitle = "Company",
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1
+                                                ))
+
+Sacrafice_subgroup <- plotScores(model = c, optns = list(plotTitle = "Sacrafice Subgroup", 
+                                                  ellipse = "color", 
+                                                  color = SCdf2$Sacrifice_subgroup, 
+                                                  colorTitle = "Sacrafice Subgroup",
+                                                  size = 2,
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1
+                                                ))
+
+DoseFlag <- plotScores(model = c, optns = list(plotTitle = "Dose Flag", 
+                                                  ellipse = "color", 
+                                                  color = SCdf2$doseFlag, 
+                                               colorTitle = "Dose Flag",
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1
+                                                ))
+
+Target <- plotScores(model = c, optns = list(plotTitle = "Target", 
+                                                  ellipse = "color", 
+                                                  color = SCdf2$Target, 
+                                             size = 2,
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1
+                                                ))
+
+Timepoint <- plotScores(model = c, optns = list(plotTitle = "Time Point", 
+                                                  ellipse = "color", 
+                                                  colorTitle = "Time point (hours)",
+                                                discretePalette =c("green", "blue", "red"),
+                                                  size = 2,
+                                                  color = as.factor(SCdf2$Timepoint), 
+                                                  PCi = 1,
+                                                  PCj = 2,
+                                                  size = 1
+                                                ))
+
+
+grid.arrange(Animal_no, Company, Timepoint, Target, DoseFlag, Sacrafice_subgroup, Toxin, ncol = 2)
+
+```
+
+
+#Make data frames
+Please note that for a sample size of 50,  summary_MICErf_strata_MCAR_Company[["imputedBias.1"]][["mean"]] AND summary_MICErf_strata_MCAR_All[["imputedBias.1"]][["mean"]] will need to be commented out. MICErf, stratified was not able to impute at this sample size. 
+##External
+##set up original Albumin and Total Protein Bias
+
+Make the bias for complete cases only for MCAR, MNAR and MAR for all percentages (5, 10, 20, 30, 40) of missingness. Run the chunk and replace MNAR with MCAR etc each time. 
+```{r}
+#set up external checks
+original.lm.1 <- summary(lm(S_Albumin ~ S_Total_protein, data = SCdf))
+# original.lm.1[["r.squared"]]
+original <-original.lm.1[["coefficients"]][2,1]
+t<-MNAR
+missed<-list()
+missedSummary<-list()
+missedBiasMNAR<-list()
+p <- c(0.05, 0.1, 0.2, 0.3, 0.4)
+placeholders <- paste0("missing ", p * 100, " %")
+for(j in 1:length(t)){
+  missedSummary[[j]] <- summary(lm(S_Albumin ~ S_Total_protein, data = t[[j]], na.action = na.omit))
+  missed[[j]] <-missedSummary[[j]][["coefficients"]][2,1]
+ missedBiasMNAR[[placeholders[j]]] <- abs((original - missed[[j]])/original)
+}
+
+#set up original AST adn ALT
+
+####################
+original.lm.2 <- summary(lm(S_ALT ~ S_AST, data = SCdf))
+# original.lm.1[["r.squared"]]
+original2 <-original.lm.2[["coefficients"]][2,1]
+missed2<-list()
+missedSummary2<-list()
+missedBias2MNAR<-list()
+for(j in 1:length(t)){
+  missedSummary2[[j]] <- summary(lm(S_ALT ~ S_AST, data = t[[j]], na.action = na.omit))
+  missed2[[j]] <-missedSummary2[[j]][["coefficients"]][2,1]
+  missedBias2MNAR[[placeholders[j]]] <- abs((original2 - missed2[[j]])/original2)
+}
+
+```
+##External setup
+######imputedbias1
+```{r}
+
+#################################################################MCAR
+imputedBias.1_MCAR_mean <-
+cbind(
+as.numeric(missedBiasMCAR),
+summary_MICErf_MCAR_All[["imputedBias.1"]][["mean"]],
+summary_MICErf_MCAR_All_Toxin[["imputedBias.1"]][["mean"]],
+summary_MICErf_MCAR_Company[["imputedBias.1"]][["mean"]],
+summary_MICErf_MCAR_noMeta[["imputedBias.1"]][["mean"]],
+  #summary_MICErf_strata_MCAR_Company[["imputedBias.1"]][["mean"]],
+  #summary_MICErf_strata_MCAR_All[["imputedBias.1"]][["mean"]],
+summary_missForest_MCAR_All[["imputedBias.1"]][["mean"]],
+summary_missForest_MCAR_Company[["imputedBias.1"]][["mean"]],
+summary_missForest_MCAR_noMeta[["imputedBias.1"]][["mean"]],
+summary_missForest_strata_MCAR_Company[["imputedBias.1"]][["mean"]],
+summary_missForest_strata_MCAR_All[["imputedBias.1"]][["mean"]]
+)
+
+imputedBias.1_MCAR_std<- 
+cbind(
+rep(x = 0, length.out=5),
+summary_MICErf_MCAR_All[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MCAR_All_Toxin[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MCAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MCAR_noMeta[["imputedBias.1"]][["std_dev"]],
+  #summary_MICErf_strata_MCAR_Company[["imputedBias.1"]][["std_dev"]],
+  #summary_MICErf_strata_MCAR_All[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MCAR_All[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MCAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MCAR_noMeta[["imputedBias.1"]][["std_dev"]],
+summary_missForest_strata_MCAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_missForest_strata_MCAR_All[["imputedBias.1"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("incomplete",
+       "MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+          #"MICErf_strata_Company", 
+          #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta", 
+       "missForest_strata_Company", 
+       "missForest_strata_All")
+
+colnames(imputedBias.1_MCAR_mean) <- cn
+rownames(imputedBias.1_MCAR_mean) <- rn
+colnames(imputedBias.1_MCAR_std) <- cn
+rownames(imputedBias.1_MCAR_std) <- rn
+
+test<- melt(imputedBias.1_MCAR_std)
+test2<-melt(imputedBias.1_MCAR_mean)
+mimputedBias.1_MCAR <- cbind(test2, test[3])
+
+colnames(mimputedBias.1_MCAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mimputedBias.1_MCAR["missType"] <- "MCAR"
+
+#################################################################MAR
+imputedBias.1_MAR_mean <-
+cbind(
+  as.numeric(missedBiasMAR),
+summary_MICErf_MAR_All[["imputedBias.1"]][["mean"]],
+summary_MICErf_MAR_All_Toxin[["imputedBias.1"]][["mean"]],
+summary_MICErf_MAR_Company[["imputedBias.1"]][["mean"]],
+summary_MICErf_MAR_noMeta[["imputedBias.1"]][["mean"]],
+  #summary_MICErf_strata_MAR_Company[["imputedBias.1"]][["mean"]],
+  #summary_MICErf_strata_MAR_All[["imputedBias.1"]][["mean"]],
+summary_missForest_MAR_All[["imputedBias.1"]][["mean"]],
+summary_missForest_MAR_Company[["imputedBias.1"]][["mean"]],
+summary_missForest_MAR_noMeta[["imputedBias.1"]][["mean"]],
+summary_missForest_strata_MAR_Company[["imputedBias.1"]][["mean"]],
+summary_missForest_strata_MAR_All[["imputedBias.1"]][["mean"]]
+)
+
+imputedBias.1_MAR_std<- 
+cbind(
+  rep(x = 0, length.out=5),
+summary_MICErf_MAR_All[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MAR_All_Toxin[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MAR_noMeta[["imputedBias.1"]][["std_dev"]],
+  #summary_MICErf_strata_MAR_Company[["imputedBias.1"]][["std_dev"]],
+  #summary_MICErf_strata_MAR_All[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MAR_All[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MAR_noMeta[["imputedBias.1"]][["std_dev"]],
+summary_missForest_strata_MAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_missForest_strata_MAR_All[["imputedBias.1"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("incomplete",
+       "MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+          #"MICErf_strata_Company", 
+          #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta", 
+       "missForest_strata_Company", 
+       "missForest_strata_All")
+
+colnames(imputedBias.1_MAR_mean) <- cn
+rownames(imputedBias.1_MAR_mean) <- rn
+colnames(imputedBias.1_MAR_std) <- cn
+rownames(imputedBias.1_MAR_std) <- rn
+
+test<- melt(imputedBias.1_MAR_std)
+test2<-melt(imputedBias.1_MAR_mean)
+mimputedBias.1_MAR <- cbind(test2, test[3])
+
+colnames(mimputedBias.1_MAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mimputedBias.1_MAR["missType"] <- "MAR"
+
+#################################################################MNAR
+imputedBias.1_MNAR_mean <-
+cbind(
+  as.numeric(missedBiasMNAR),
+summary_MICErf_MNAR_All[["imputedBias.1"]][["mean"]],
+summary_MICErf_MNAR_All_Toxin[["imputedBias.1"]][["mean"]],
+summary_MICErf_MNAR_Company[["imputedBias.1"]][["mean"]],
+summary_MICErf_MNAR_noMeta[["imputedBias.1"]][["mean"]],
+  #summary_MICErf_strata_MNAR_Company[["imputedBias.1"]][["mean"]],
+  #summary_MICErf_strata_MNAR_All[["imputedBias.1"]][["mean"]],
+summary_missForest_MNAR_All[["imputedBias.1"]][["mean"]],
+summary_missForest_MNAR_Company[["imputedBias.1"]][["mean"]],
+summary_missForest_MNAR_noMeta[["imputedBias.1"]][["mean"]],
+summary_missForest_strata_MNAR_Company[["imputedBias.1"]][["mean"]],
+summary_missForest_strata_MNAR_All[["imputedBias.1"]][["mean"]]
+)
+
+imputedBias.1_MNAR_std<- 
+cbind(
+  rep(x = 0, length.out=5),
+summary_MICErf_MNAR_All[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MNAR_All_Toxin[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MNAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_MICErf_MNAR_noMeta[["imputedBias.1"]][["std_dev"]],
+  #summary_MICErf_strata_MNAR_Company[["imputedBias.1"]][["std_dev"]],
+  #summary_MICErf_strata_MNAR_All[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MNAR_All[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MNAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_missForest_MNAR_noMeta[["imputedBias.1"]][["std_dev"]],
+summary_missForest_strata_MNAR_Company[["imputedBias.1"]][["std_dev"]],
+summary_missForest_strata_MNAR_All[["imputedBias.1"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("incomplete",
+       "MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+          #"MICErf_strata_Company", 
+          #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta", 
+       "missForest_strata_Company", 
+       "missForest_strata_All")
+
+colnames(imputedBias.1_MNAR_mean) <- cn
+rownames(imputedBias.1_MNAR_mean) <- rn
+colnames(imputedBias.1_MNAR_std) <- cn
+rownames(imputedBias.1_MNAR_std) <- rn
+
+test<- melt(imputedBias.1_MNAR_std)
+test2<-melt(imputedBias.1_MNAR_mean)
+mimputedBias.1_MNAR <- cbind(test2, test[3])
+
+colnames(mimputedBias.1_MNAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mimputedBias.1_MNAR["missType"] <- "MNAR"
+```
+
+
+######imputedbias2
+```{r}
+
+#################################################################MCAR
+imputedBias.2_MCAR_mean <-
+cbind(
+as.numeric(missedBias2MCAR),
+summary_MICErf_MCAR_All[["imputedBias.2"]][["mean"]],
+summary_MICErf_MCAR_All_Toxin[["imputedBias.2"]][["mean"]],
+summary_MICErf_MCAR_Company[["imputedBias.2"]][["mean"]],
+summary_MICErf_MCAR_noMeta[["imputedBias.2"]][["mean"]],
+  #summary_MICErf_strata_MCAR_Company[["imputedBias.2"]][["mean"]],
+  #summary_MICErf_strata_MCAR_All[["imputedBias.2"]][["mean"]],
+summary_missForest_MCAR_All[["imputedBias.2"]][["mean"]],
+summary_missForest_MCAR_Company[["imputedBias.2"]][["mean"]],
+summary_missForest_MCAR_noMeta[["imputedBias.2"]][["mean"]],
+summary_missForest_strata_MCAR_Company[["imputedBias.2"]][["mean"]],
+summary_missForest_strata_MCAR_All[["imputedBias.2"]][["mean"]]
+)
+
+imputedBias.2_MCAR_std<- 
+cbind(
+rep(x = 0, length.out=5),
+summary_MICErf_MCAR_All[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MCAR_All_Toxin[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MCAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MCAR_noMeta[["imputedBias.2"]][["std_dev"]],
+  #summary_MICErf_strata_MCAR_Company[["imputedBias.2"]][["std_dev"]],
+  #summary_MICErf_strata_MCAR_All[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MCAR_All[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MCAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MCAR_noMeta[["imputedBias.2"]][["std_dev"]],
+summary_missForest_strata_MCAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_missForest_strata_MCAR_All[["imputedBias.2"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("incomplete",
+       "MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+          #"MICErf_strata_Company", 
+          #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta", 
+       "missForest_strata_Company", 
+       "missForest_strata_All")
+
+colnames(imputedBias.2_MCAR_mean) <- cn
+rownames(imputedBias.2_MCAR_mean) <- rn
+colnames(imputedBias.2_MCAR_std) <- cn
+rownames(imputedBias.2_MCAR_std) <- rn
+
+test<- melt(imputedBias.2_MCAR_std)
+test2<-melt(imputedBias.2_MCAR_mean)
+mimputedBias.2_MCAR <- cbind(test2, test[3])
+
+colnames(mimputedBias.2_MCAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mimputedBias.2_MCAR["missType"] <- "MCAR"
+
+#################################################################MAR
+imputedBias.2_MAR_mean <-
+cbind(
+  as.numeric(missedBias2MAR),
+summary_MICErf_MAR_All[["imputedBias.2"]][["mean"]],
+summary_MICErf_MAR_All_Toxin[["imputedBias.2"]][["mean"]],
+summary_MICErf_MAR_Company[["imputedBias.2"]][["mean"]],
+summary_MICErf_MAR_noMeta[["imputedBias.2"]][["mean"]],
+  #summary_MICErf_strata_MAR_Company[["imputedBias.2"]][["mean"]],
+  #summary_MICErf_strata_MAR_All[["imputedBias.2"]][["mean"]],
+summary_missForest_MAR_All[["imputedBias.2"]][["mean"]],
+summary_missForest_MAR_Company[["imputedBias.2"]][["mean"]],
+summary_missForest_MAR_noMeta[["imputedBias.2"]][["mean"]],
+summary_missForest_strata_MAR_Company[["imputedBias.2"]][["mean"]],
+summary_missForest_strata_MAR_All[["imputedBias.2"]][["mean"]]
+)
+
+imputedBias.2_MAR_std<- 
+cbind(
+  rep(x = 0, length.out=5),
+summary_MICErf_MAR_All[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MAR_All_Toxin[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_MICErf_MAR_noMeta[["imputedBias.2"]][["std_dev"]],
+  #summary_MICErf_strata_MAR_Company[["imputedBias.2"]][["std_dev"]],
+  #summary_MICErf_strata_MAR_All[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MAR_All[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_missForest_MAR_noMeta[["imputedBias.2"]][["std_dev"]],
+summary_missForest_strata_MAR_Company[["imputedBias.2"]][["std_dev"]],
+summary_missForest_strata_MAR_All[["imputedBias.2"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("incomplete",
+       "MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+          #"MICErf_strata_Company", 
+          #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta", 
+       "missForest_strata_Company", 
+       "missForest_strata_All")
+
+colnames(imputedBias.2_MAR_mean) <- cn
+rownames(imputedBias.2_MAR_mean) <- rn
+colnames(imputedBias.2_MAR_std) <- cn
+rownames(imputedBias.2_MAR_std) <- rn
+
+test<- melt(imputedBias.2_MAR_std)
+test2<-melt(imputedBias.2_MAR_mean)
+mimputedBias.2_MAR <- cbind(test2, test[3])
+
+colnames(mimputedBias.2_MAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mimputedBias.2_MAR["missType"] <- "MAR"
+
+#################################################################MNAR
 imputedBias.2_MNAR_mean <-
 cbind(
+  as.numeric(missedBias2MNAR),
 summary_MICErf_MNAR_All[["imputedBias.2"]][["mean"]],
 summary_MICErf_MNAR_All_Toxin[["imputedBias.2"]][["mean"]],
 summary_MICErf_MNAR_Company[["imputedBias.2"]][["mean"]],
@@ -45,6 +526,7 @@ summary_missForest_strata_MNAR_All[["imputedBias.2"]][["mean"]]
 
 imputedBias.2_MNAR_std<- 
 cbind(
+  rep(x = 0, length.out=5),
 summary_MICErf_MNAR_All[["imputedBias.2"]][["std_dev"]],
 summary_MICErf_MNAR_All_Toxin[["imputedBias.2"]][["std_dev"]],
 summary_MICErf_MNAR_Company[["imputedBias.2"]][["std_dev"]],
@@ -59,7 +541,8 @@ summary_missForest_strata_MNAR_All[["imputedBias.2"]][["std_dev"]]
                   )
 
 rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
-cn<- c("MICErf_All", 
+cn<- c("incomplete",
+       "MICErf_All", 
        "MICErf_All_Toxin", 
        "MICErf_Company", 
        "MICErf_noMeta", 
@@ -84,64 +567,491 @@ colnames(mimputedBias.2_MNAR) <- c("Missing", "Imputation", "Mean", "std")
 
 mimputedBias.2_MNAR["missType"] <- "MNAR"
 ```
-
+######External df
 ```{r}
 imputedBias.1<- rbind(mimputedBias.1_MCAR, mimputedBias.1_MAR, mimputedBias.1_MNAR)
 imputedBias.1$metric <- "imputedBias.1"
 
- bias1<- rbind(as.data.frame(MCARbias1), as.data.frame(MARbias1), as.data.frame(MNARbias1))
- bias1$metric <- "imputedBias.1"
- colnames(bias1)<- colnames(imputedBias.1)
- bias1 <-bias1[,1:6]
-
-imputedBias.1 <- rbind(bias1, imputedBias.1)
-
-
-
 imputedBias.2<- rbind(mimputedBias.2_MCAR, mimputedBias.2_MAR, mimputedBias.2_MNAR)
 imputedBias.2$metric <- "imputedBias.2"
 
- bias2<- rbind(as.data.frame(MCARbias2), as.data.frame(MARbias2), as.data.frame(MNARbias2))
- bias2$metric <- "imputedBias.2"
- colnames(bias2)<- colnames(imputedBias.2)
- bias2 <-bias2[,1:6]
-
-imputedBias.2 <- rbind(bias2, imputedBias.2)
-
-
-```
-
-
-```{r}
-ExternalData <- rbind(imputedBias.2, imputedBias.1)
-
-
-ExternalData$Missing<-(unlist(ExternalData$Missing))
-ExternalData$Missing<-factor(ExternalData$Missing, levels = rn)
-
-ExternalData$missType<-(unlist(ExternalData$missType))
-ExternalData$missType<-factor(ExternalData$missType)
-
-ExternalData$Imputation<-(unlist(ExternalData$Imputation))
-ExternalData$Imputation<-factor(ExternalData$Imputation)
-
-ExternalData$Mean<-(unlist(ExternalData$Mean))
-ExternalData$std<-(unlist(ExternalData$std))
-
-ExternalData$metric<-(unlist(ExternalData$metric))
-ExternalData$metric<-factor(ExternalData$metric)
-
-ExternalData50<- ExternalData
+ExternalData50<- rbind(imputedBias.1, imputedBias.2)
 ExternalData50$sampleSize <- 50
 
-save(ExternalData50, file = "ExternalMetricPlotData50.Rdata")
+save(ExternalData50, file = "ExternalData50.Rdata")
 
 ```
 
-##Interal
+
+##Interal setup
+#####NRMSE
 ```{r}
 
+#####################################################################MCAR
+NRMSE_MCAR_mean <-
+cbind(
+summary_MICErf_MCAR_All[["NRMSE"]][["mean"]],
+summary_MICErf_MCAR_All_Toxin[["NRMSE"]][["mean"]],
+summary_MICErf_MCAR_Company[["NRMSE"]][["mean"]],
+summary_MICErf_MCAR_noMeta[["NRMSE"]][["mean"]],
+   #summary_MICErf_strata_MCAR_Company[["NRMSE"]][["mean"]],
+   #summary_MICErf_strata_MCAR_All[["NRMSE"]][["mean"]],
+summary_missForest_MCAR_All[["NRMSE"]][["mean"]],
+summary_missForest_MCAR_Company[["NRMSE"]][["mean"]],
+summary_missForest_MCAR_noMeta[["NRMSE"]][["mean"]],
+summary_missForest_strata_MCAR_Company[["NRMSE"]][["mean"]],
+summary_missForest_strata_MCAR_All[["NRMSE"]][["mean"]]
+)
 
+NRMSE_MCAR_std<- 
+cbind(
+summary_MICErf_MCAR_All[["NRMSE"]][["std_dev"]],
+summary_MICErf_MCAR_All_Toxin[["NRMSE"]][["std_dev"]],
+summary_MICErf_MCAR_Company[["NRMSE"]][["std_dev"]],
+summary_MICErf_MCAR_noMeta[["NRMSE"]][["std_dev"]],
+    #summary_MICErf_strata_MCAR_Company[["NRMSE"]][["std_dev"]],
+    #summary_MICErf_strata_MCAR_All[["NRMSE"]][["std_dev"]],
+summary_missForest_MCAR_All[["NRMSE"]][["std_dev"]],
+summary_missForest_MCAR_Company[["NRMSE"]][["std_dev"]],
+summary_missForest_MCAR_noMeta[["NRMSE"]][["std_dev"]],
+summary_missForest_strata_MCAR_Company[["NRMSE"]][["std_dev"]],
+summary_missForest_strata_MCAR_All[["NRMSE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(NRMSE_MCAR_mean) <- cn
+rownames(NRMSE_MCAR_mean) <- rn
+colnames(NRMSE_MCAR_std) <- cn
+rownames(NRMSE_MCAR_std) <- rn
+
+test<- melt(NRMSE_MCAR_std)
+test2<-melt(NRMSE_MCAR_mean)
+mNRMSE_MCAR <- cbind(test2, test[3])
+
+colnames(mNRMSE_MCAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mNRMSE_MCAR["missType"] <- "MCAR"
+#################################################################MAR
+NRMSE_MAR_mean <-
+cbind(
+summary_MICErf_MAR_All[["NRMSE"]][["mean"]],
+summary_MICErf_MAR_All_Toxin[["NRMSE"]][["mean"]],
+summary_MICErf_MAR_Company[["NRMSE"]][["mean"]],
+summary_MICErf_MAR_noMeta[["NRMSE"]][["mean"]],
+   #summary_MICErf_strata_MAR_Company[["NRMSE"]][["mean"]],
+   #summary_MICErf_strata_MAR_All[["NRMSE"]][["mean"]],
+summary_missForest_MAR_All[["NRMSE"]][["mean"]],
+summary_missForest_MAR_Company[["NRMSE"]][["mean"]],
+summary_missForest_MAR_noMeta[["NRMSE"]][["mean"]],
+summary_missForest_strata_MAR_Company[["NRMSE"]][["mean"]],
+summary_missForest_strata_MAR_All[["NRMSE"]][["mean"]]
+)
+
+NRMSE_MAR_std<- 
+cbind(
+summary_MICErf_MAR_All[["NRMSE"]][["std_dev"]],
+summary_MICErf_MAR_All_Toxin[["NRMSE"]][["std_dev"]],
+summary_MICErf_MAR_Company[["NRMSE"]][["std_dev"]],
+summary_MICErf_MAR_noMeta[["NRMSE"]][["std_dev"]],
+    #summary_MICErf_strata_MAR_Company[["NRMSE"]][["std_dev"]],
+    #summary_MICErf_strata_MAR_All[["NRMSE"]][["std_dev"]],
+summary_missForest_MAR_All[["NRMSE"]][["std_dev"]],
+summary_missForest_MAR_Company[["NRMSE"]][["std_dev"]],
+summary_missForest_MAR_noMeta[["NRMSE"]][["std_dev"]],
+summary_missForest_strata_MAR_Company[["NRMSE"]][["std_dev"]],
+summary_missForest_strata_MAR_All[["NRMSE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(NRMSE_MAR_mean) <- cn
+rownames(NRMSE_MAR_mean) <- rn
+colnames(NRMSE_MAR_std) <- cn
+rownames(NRMSE_MAR_std) <- rn
+
+test<- melt(NRMSE_MAR_std)
+test2<-melt(NRMSE_MAR_mean)
+mNRMSE_MAR <- cbind(test2, test[3])
+
+colnames(mNRMSE_MAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mNRMSE_MAR["missType"] <- "MAR"
+#####################################################################MNAR
+NRMSE_MNAR_mean <-
+cbind(
+summary_MICErf_MNAR_All[["NRMSE"]][["mean"]],
+summary_MICErf_MNAR_All_Toxin[["NRMSE"]][["mean"]],
+summary_MICErf_MNAR_Company[["NRMSE"]][["mean"]],
+summary_MICErf_MNAR_noMeta[["NRMSE"]][["mean"]],
+   #summary_MICErf_strata_MNAR_Company[["NRMSE"]][["mean"]],
+   #summary_MICErf_strata_MNAR_All[["NRMSE"]][["mean"]],
+summary_missForest_MNAR_All[["NRMSE"]][["mean"]],
+summary_missForest_MNAR_Company[["NRMSE"]][["mean"]],
+summary_missForest_MNAR_noMeta[["NRMSE"]][["mean"]],
+summary_missForest_strata_MNAR_Company[["NRMSE"]][["mean"]],
+summary_missForest_strata_MNAR_All[["NRMSE"]][["mean"]]
+)
+
+NRMSE_MNAR_std<- 
+cbind(
+summary_MICErf_MNAR_All[["NRMSE"]][["std_dev"]],
+summary_MICErf_MNAR_All_Toxin[["NRMSE"]][["std_dev"]],
+summary_MICErf_MNAR_Company[["NRMSE"]][["std_dev"]],
+summary_MICErf_MNAR_noMeta[["NRMSE"]][["std_dev"]],
+    #summary_MICErf_strata_MNAR_Company[["NRMSE"]][["std_dev"]],
+    #summary_MICErf_strata_MNAR_All[["NRMSE"]][["std_dev"]],
+summary_missForest_MNAR_All[["NRMSE"]][["std_dev"]],
+summary_missForest_MNAR_Company[["NRMSE"]][["std_dev"]],
+summary_missForest_MNAR_noMeta[["NRMSE"]][["std_dev"]],
+summary_missForest_strata_MNAR_Company[["NRMSE"]][["std_dev"]],
+summary_missForest_strata_MNAR_All[["NRMSE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(NRMSE_MNAR_mean) <- cn
+rownames(NRMSE_MNAR_mean) <- rn
+colnames(NRMSE_MNAR_std) <- cn
+rownames(NRMSE_MNAR_std) <- rn
+
+test<- melt(NRMSE_MNAR_std)
+test2<-melt(NRMSE_MNAR_mean)
+mNRMSE_MNAR <- cbind(test2, test[3])
+
+colnames(mNRMSE_MNAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mNRMSE_MNAR["missType"] <- "MNAR"
+```
+#####Full MAE
+```{r}
+
+#####################################################################MCAR
+fullMAE_MCAR_mean <-
+cbind(
+summary_MICErf_MCAR_All[["fullMAE"]][["mean"]],
+summary_MICErf_MCAR_All_Toxin[["fullMAE"]][["mean"]],
+summary_MICErf_MCAR_Company[["fullMAE"]][["mean"]],
+summary_MICErf_MCAR_noMeta[["fullMAE"]][["mean"]],
+   #summary_MICErf_strata_MCAR_Company[["fullMAE"]][["mean"]],
+   #summary_MICErf_strata_MCAR_All[["fullMAE"]][["mean"]],
+summary_missForest_MCAR_All[["fullMAE"]][["mean"]],
+summary_missForest_MCAR_Company[["fullMAE"]][["mean"]],
+summary_missForest_MCAR_noMeta[["fullMAE"]][["mean"]],
+summary_missForest_strata_MCAR_Company[["fullMAE"]][["mean"]],
+summary_missForest_strata_MCAR_All[["fullMAE"]][["mean"]]
+)
+
+fullMAE_MCAR_std<- 
+cbind(
+summary_MICErf_MCAR_All[["fullMAE"]][["std_dev"]],
+summary_MICErf_MCAR_All_Toxin[["fullMAE"]][["std_dev"]],
+summary_MICErf_MCAR_Company[["fullMAE"]][["std_dev"]],
+summary_MICErf_MCAR_noMeta[["fullMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MCAR_Company[["fullMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MCAR_All[["fullMAE"]][["std_dev"]],
+summary_missForest_MCAR_All[["fullMAE"]][["std_dev"]],
+summary_missForest_MCAR_Company[["fullMAE"]][["std_dev"]],
+summary_missForest_MCAR_noMeta[["fullMAE"]][["std_dev"]],
+summary_missForest_strata_MCAR_Company[["fullMAE"]][["std_dev"]],
+summary_missForest_strata_MCAR_All[["fullMAE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(fullMAE_MCAR_mean) <- cn
+rownames(fullMAE_MCAR_mean) <- rn
+colnames(fullMAE_MCAR_std) <- cn
+rownames(fullMAE_MCAR_std) <- rn
+
+test<- melt(fullMAE_MCAR_std)
+test2<-melt(fullMAE_MCAR_mean)
+mfullMAE_MCAR <- cbind(test2, test[3])
+
+colnames(mfullMAE_MCAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mfullMAE_MCAR["missType"] <- "MCAR"
+#################################################################MAR
+fullMAE_MAR_mean <-
+cbind(
+summary_MICErf_MAR_All[["fullMAE"]][["mean"]],
+summary_MICErf_MAR_All_Toxin[["fullMAE"]][["mean"]],
+summary_MICErf_MAR_Company[["fullMAE"]][["mean"]],
+summary_MICErf_MAR_noMeta[["fullMAE"]][["mean"]],
+   #summary_MICErf_strata_MAR_Company[["fullMAE"]][["mean"]],
+   #summary_MICErf_strata_MAR_All[["fullMAE"]][["mean"]],
+summary_missForest_MAR_All[["fullMAE"]][["mean"]],
+summary_missForest_MAR_Company[["fullMAE"]][["mean"]],
+summary_missForest_MAR_noMeta[["fullMAE"]][["mean"]],
+summary_missForest_strata_MAR_Company[["fullMAE"]][["mean"]],
+summary_missForest_strata_MAR_All[["fullMAE"]][["mean"]]
+)
+
+fullMAE_MAR_std<- 
+cbind(
+summary_MICErf_MAR_All[["fullMAE"]][["std_dev"]],
+summary_MICErf_MAR_All_Toxin[["fullMAE"]][["std_dev"]],
+summary_MICErf_MAR_Company[["fullMAE"]][["std_dev"]],
+summary_MICErf_MAR_noMeta[["fullMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MAR_Company[["fullMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MAR_All[["fullMAE"]][["std_dev"]],
+summary_missForest_MAR_All[["fullMAE"]][["std_dev"]],
+summary_missForest_MAR_Company[["fullMAE"]][["std_dev"]],
+summary_missForest_MAR_noMeta[["fullMAE"]][["std_dev"]],
+summary_missForest_strata_MAR_Company[["fullMAE"]][["std_dev"]],
+summary_missForest_strata_MAR_All[["fullMAE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(fullMAE_MAR_mean) <- cn
+rownames(fullMAE_MAR_mean) <- rn
+colnames(fullMAE_MAR_std) <- cn
+rownames(fullMAE_MAR_std) <- rn
+
+test<- melt(fullMAE_MAR_std)
+test2<-melt(fullMAE_MAR_mean)
+mfullMAE_MAR <- cbind(test2, test[3])
+
+colnames(mfullMAE_MAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mfullMAE_MAR["missType"] <- "MAR"
+#####################################################################MNAR
+fullMAE_MNAR_mean <-
+cbind(
+summary_MICErf_MNAR_All[["fullMAE"]][["mean"]],
+summary_MICErf_MNAR_All_Toxin[["fullMAE"]][["mean"]],
+summary_MICErf_MNAR_Company[["fullMAE"]][["mean"]],
+summary_MICErf_MNAR_noMeta[["fullMAE"]][["mean"]],
+   #summary_MICErf_strata_MNAR_Company[["fullMAE"]][["mean"]],
+   #summary_MICErf_strata_MNAR_All[["fullMAE"]][["mean"]],
+summary_missForest_MNAR_All[["fullMAE"]][["mean"]],
+summary_missForest_MNAR_Company[["fullMAE"]][["mean"]],
+summary_missForest_MNAR_noMeta[["fullMAE"]][["mean"]],
+summary_missForest_strata_MNAR_Company[["fullMAE"]][["mean"]],
+summary_missForest_strata_MNAR_All[["fullMAE"]][["mean"]]
+)
+
+fullMAE_MNAR_std<- 
+cbind(
+summary_MICErf_MNAR_All[["fullMAE"]][["std_dev"]],
+summary_MICErf_MNAR_All_Toxin[["fullMAE"]][["std_dev"]],
+summary_MICErf_MNAR_Company[["fullMAE"]][["std_dev"]],
+summary_MICErf_MNAR_noMeta[["fullMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MNAR_Company[["fullMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MNAR_All[["fullMAE"]][["std_dev"]],
+summary_missForest_MNAR_All[["fullMAE"]][["std_dev"]],
+summary_missForest_MNAR_Company[["fullMAE"]][["std_dev"]],
+summary_missForest_MNAR_noMeta[["fullMAE"]][["std_dev"]],
+summary_missForest_strata_MNAR_Company[["fullMAE"]][["std_dev"]],
+summary_missForest_strata_MNAR_All[["fullMAE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(fullMAE_MNAR_mean) <- cn
+rownames(fullMAE_MNAR_mean) <- rn
+colnames(fullMAE_MNAR_std) <- cn
+rownames(fullMAE_MNAR_std) <- rn
+
+test<- melt(fullMAE_MNAR_std)
+test2<-melt(fullMAE_MNAR_mean)
+mfullMAE_MNAR <- cbind(test2, test[3])
+
+colnames(mfullMAE_MNAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mfullMAE_MNAR["missType"] <- "MNAR"
+```
+#####Partial MAE
+```{r}
+
+#####################################################################MCAR
+partialMAE_MCAR_mean <-
+cbind(
+summary_MICErf_MCAR_All[["partialMAE"]][["mean"]],
+summary_MICErf_MCAR_All_Toxin[["partialMAE"]][["mean"]],
+summary_MICErf_MCAR_Company[["partialMAE"]][["mean"]],
+summary_MICErf_MCAR_noMeta[["partialMAE"]][["mean"]],
+   #summary_MICErf_strata_MCAR_Company[["partialMAE"]][["mean"]],
+   #summary_MICErf_strata_MCAR_All[["partialMAE"]][["mean"]],
+summary_missForest_MCAR_All[["partialMAE"]][["mean"]],
+summary_missForest_MCAR_Company[["partialMAE"]][["mean"]],
+summary_missForest_MCAR_noMeta[["partialMAE"]][["mean"]],
+summary_missForest_strata_MCAR_Company[["partialMAE"]][["mean"]],
+summary_missForest_strata_MCAR_All[["partialMAE"]][["mean"]]
+)
+
+partialMAE_MCAR_std<- 
+cbind(
+summary_MICErf_MCAR_All[["partialMAE"]][["std_dev"]],
+summary_MICErf_MCAR_All_Toxin[["partialMAE"]][["std_dev"]],
+summary_MICErf_MCAR_Company[["partialMAE"]][["std_dev"]],
+summary_MICErf_MCAR_noMeta[["partialMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MCAR_Company[["partialMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MCAR_All[["partialMAE"]][["std_dev"]],
+summary_missForest_MCAR_All[["partialMAE"]][["std_dev"]],
+summary_missForest_MCAR_Company[["partialMAE"]][["std_dev"]],
+summary_missForest_MCAR_noMeta[["partialMAE"]][["std_dev"]],
+summary_missForest_strata_MCAR_Company[["partialMAE"]][["std_dev"]],
+summary_missForest_strata_MCAR_All[["partialMAE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(partialMAE_MCAR_mean) <- cn
+rownames(partialMAE_MCAR_mean) <- rn
+colnames(partialMAE_MCAR_std) <- cn
+rownames(partialMAE_MCAR_std) <- rn
+
+test<- melt(partialMAE_MCAR_std)
+test2<-melt(partialMAE_MCAR_mean)
+mpartialMAE_MCAR <- cbind(test2, test[3])
+
+colnames(mpartialMAE_MCAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mpartialMAE_MCAR["missType"] <- "MCAR"
+#################################################################MAR
+partialMAE_MAR_mean <-
+cbind(
+summary_MICErf_MAR_All[["partialMAE"]][["mean"]],
+summary_MICErf_MAR_All_Toxin[["partialMAE"]][["mean"]],
+summary_MICErf_MAR_Company[["partialMAE"]][["mean"]],
+summary_MICErf_MAR_noMeta[["partialMAE"]][["mean"]],
+   #summary_MICErf_strata_MAR_Company[["partialMAE"]][["mean"]],
+   #summary_MICErf_strata_MAR_All[["partialMAE"]][["mean"]],
+summary_missForest_MAR_All[["partialMAE"]][["mean"]],
+summary_missForest_MAR_Company[["partialMAE"]][["mean"]],
+summary_missForest_MAR_noMeta[["partialMAE"]][["mean"]],
+summary_missForest_strata_MAR_Company[["partialMAE"]][["mean"]],
+summary_missForest_strata_MAR_All[["partialMAE"]][["mean"]]
+)
+
+partialMAE_MAR_std<- 
+cbind(
+summary_MICErf_MAR_All[["partialMAE"]][["std_dev"]],
+summary_MICErf_MAR_All_Toxin[["partialMAE"]][["std_dev"]],
+summary_MICErf_MAR_Company[["partialMAE"]][["std_dev"]],
+summary_MICErf_MAR_noMeta[["partialMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MAR_Company[["partialMAE"]][["std_dev"]],
+    #summary_MICErf_strata_MAR_All[["partialMAE"]][["std_dev"]],
+summary_missForest_MAR_All[["partialMAE"]][["std_dev"]],
+summary_missForest_MAR_Company[["partialMAE"]][["std_dev"]],
+summary_missForest_MAR_noMeta[["partialMAE"]][["std_dev"]],
+summary_missForest_strata_MAR_Company[["partialMAE"]][["std_dev"]],
+summary_missForest_strata_MAR_All[["partialMAE"]][["std_dev"]]
+                  )
+
+rn <- c("5 %", "10 %", "20 %", "30 %", "40 %")
+cn<- c("MICErf_All", 
+       "MICErf_All_Toxin", 
+       "MICErf_Company", 
+       "MICErf_noMeta", 
+        #"MICErf_strata_Company", 
+        #"MICErf_strata_All", 
+       "missForest_All", 
+       "missForest_Company", 
+       "missForest_noMeta",
+       "missForest_strata_Company",
+       "missForest_strata_All"
+       )
+
+colnames(partialMAE_MAR_mean) <- cn
+rownames(partialMAE_MAR_mean) <- rn
+colnames(partialMAE_MAR_std) <- cn
+rownames(partialMAE_MAR_std) <- rn
+
+test<- melt(partialMAE_MAR_std)
+test2<-melt(partialMAE_MAR_mean)
+mpartialMAE_MAR <- cbind(test2, test[3])
+
+colnames(mpartialMAE_MAR) <- c("Missing", "Imputation", "Mean", "std")
+
+mpartialMAE_MAR["missType"] <- "MAR"
+#####################################################################MNAR
 partialMAE_MNAR_mean <-
 cbind(
 summary_MICErf_MNAR_All[["partialMAE"]][["mean"]],
@@ -200,6 +1110,7 @@ colnames(mpartialMAE_MNAR) <- c("Missing", "Imputation", "Mean", "std")
 mpartialMAE_MNAR["missType"] <- "MNAR"
 ```
 
+####interal df
 ```{r}
 NRMSE<- rbind(mNRMSE_MCAR, mNRMSE_MAR, mNRMSE_MNAR)
 NRMSE$metric <- "NRMSE"
@@ -213,13 +1124,23 @@ partialMAE$metric <- "partialMAE"
 InternalData50<- rbind(NRMSE, fullMAE, partialMAE)
 InternalData50$sampleSize <- 50
 
-save(InternalData50, file = "InternalMetricPlotData50.Rdata")
+save(InternalData50, file = "InternalData50.Rdata")
+```
+
+#import dfs
+Take the data frames for figure purposes from OneDrive
+```{r}
+load("~/OneDrive - Murdoch University/COMET/COMET/2769 samples/ExternalData2769.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/2769 samples/InternalData2769.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/500 Samples/ExternalData500.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/500 Samples/InternalData500.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/50 Samples/ExternalData50.Rdata")
+load("~/OneDrive - Murdoch University/COMET/COMET/50 Samples/InternalData50.Rdata")
 ```
 
 
-
 #main figures
-
+set up the desired color schemes
 ```{r}
  scm <- scale_color_manual(values = c(
     "incomplete" ="black",
@@ -279,13 +1200,14 @@ sfm <- scale_fill_manual(values = c(
 ```
 ##External
 ```{r}
-
-levels(ExternalData2769$metric)[levels(ExternalData2769$metric) == "imputedBias.1"] <- "Total Protein vs Albumin Bias"
-levels(ExternalData2769$metric)[levels(ExternalData2769$metric) == "imputedBias.2"] <- "AST vs ALT Bias"
-
+ExternalData2769$metric[ExternalData2769$metric == "imputedBias.1"] <- "Total Protein vs Albumin Bias"
+ExternalData2769$metric[ExternalData2769$metric == "imputedBias.2"] <- "AST vs ALT Bias"
 
 mainExternalPlot <- 
-  ggplot(data = ExternalData2769, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
+  ggplot(data = ExternalData2769, 
+         aes(x = Missing, y = Mean, 
+             color = Imputation, 
+             group = Imputation)) + 
   geom_point(size = 2) +
   geom_line(aes(group = Imputation)) +
   geom_ribbon(aes(x = Missing,
@@ -298,7 +1220,8 @@ mainExternalPlot <-
                 labs(x = "Missing",
                      colour = "Imputation") +
                 theme_bw() + 
-                  theme(legend.position = "none",
+                  theme(legend.position = "bottom",
+                        strip.text = element_text( size = 12),
                     axis.title.y = element_blank(),
                         strip.placement = "outside",
                         strip.background = element_rect(fill = "white", 
@@ -309,7 +1232,19 @@ mainExternalPlot <-
    scm +
    sfm +
    xlab("Missing %") 
-                
+
+#get legend
+leg <- get_legend(mainExternalPlot)
+
+# Convert to a ggplot and print
+externalLegend <- as_ggplot(leg)
+
+#remove legend from graph before saving
+mainExternalPlot <- mainExternalPlot + theme(legend.position = "none")    
+
+ggsave(file=paste("ExternalLegend.pdf",sep=""), plot=externalLegend, width = 9)
+ggsave(file=paste("ExternalLegend.svg",sep=""), plot=externalLegend, width = 9)
+
 ggsave(file=paste("External plot main.pdf",sep=""), plot=mainExternalPlot, height = 6, width = 9)
 ggsave(file=paste("External plot main.svg",sep=""), plot=mainExternalPlot, height = 6, width = 9)
 
@@ -318,7 +1253,10 @@ ggsave(file=paste("External plot main.svg",sep=""), plot=mainExternalPlot, heigh
 ##Internal
 ```{r}
 mainInternalPlot<- 
-  ggplot(data = InternalData2769, aes(x = Missing, y = Mean, color = Imputation, group = Imputation)) + 
+  ggplot(data = InternalData2769, aes(x = Missing, 
+                                      y = Mean, 
+                                      color = Imputation, 
+                                      group = Imputation)) + 
                     geom_point(size = 2) +
                     geom_line(aes(group = Imputation)) +
                     geom_ribbon(aes(x = Missing,
@@ -334,22 +1272,24 @@ mainInternalPlot<-
                                     theme(
                                       axis.title.y = element_blank(),
                                       strip.placement = "outside",
+                                      strip.text = element_text( size = 12),
                                           legend.position = "bottom",
                                           strip.background = element_rect(fill = "white", 
                                                                           color = "white"),
                                           #axis.title.x = element_blank(),
                                           panel.spacing = unit(0, "lines")) +
-                     facet_grid(metric~missType, scales = "free_y", switch = "y")+
+                     facet_grid(metric~missType, scales = "free_y", switch = "y") +
                     scm +
                     sfm + 
   xlab("Missing %") 
 
-
+#get legend
 leg <- get_legend(mainInternalPlot)
 
 # Convert to a ggplot and print
 internalLegend <- as_ggplot(leg)
 
+#remove legend from plot before saving
 mainInternalPlot <- mainInternalPlot + theme(legend.position = "none")    
 
 
@@ -388,28 +1328,22 @@ supmatNRMSE <- ggplot(data = NRMSE, aes(x = Missing, y = Mean, color = Imputatio
                 labs(x = "Missing",
                      colour = "Imputation") +
                 theme_bw() + 
-                  theme(axis.title.y = element_blank(),
-                        legend.position = "bottom",
+                  theme(
+                        legend.position = "none",
+                        strip.placement = "outside",
+                        strip.text = element_text( size = 12),
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
-                        axis.title.x = element_blank(),
                         panel.spacing = unit(0, "lines")) +
-   facet_grid(sampleSize~missType, scales = "free_y") +
+   facet_grid(sampleSize~missType, 
+              scales = "free_y") +
   scm +
-  sfm
-
-leg <- get_legend(supmatNRMSE)
-
-# Convert to a ggplot and print
-internalLegend <- as_ggplot(leg)
-
-supmatNRMSE <- supmatNRMSE + theme(legend.position = "none")    
+  sfm + 
+  xlab("Missing %") +
+  ylab("NRMSE")
 
 ggsave(file=paste("NRMSE supmat.pdf",sep=""), plot=supmatNRMSE, height = 9, width = 9)
 ggsave(file=paste("NRMSE supmat.svg",sep=""), plot=supmatNRMSE, height = 9, width = 9)
-ggsave(file=paste("InternalLegend.pdf",sep=""), plot=internalLegend, width = 9)
-ggsave(file=paste("InternalLegend.svg",sep=""), plot=internalLegend, width = 9)
-
 
 ```
 
@@ -436,15 +1370,19 @@ supmatfullMAE <- ggplot(data = fullMAE, aes(x = Missing, y = Mean, color = Imput
                 labs(x = "Missing",
                      colour = "Imputation") +
                 theme_bw() + 
-                  theme(axis.title.y = element_blank(),
-                        legend.position = "bottom",
+                  theme(
+                        legend.position = "none",
+                        strip.text = element_text( size = 12),
+                        strip.placement = "outside",
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
-                        axis.title.x = element_blank(),
                         panel.spacing = unit(0, "lines")) +
-   facet_grid(sampleSize~missType, scales = "free_y") +
+   facet_grid(sampleSize~missType, 
+              scales = "free_y") +
   scm +
-  sfm
+  sfm + 
+  xlab("Missing %") +
+  ylab("Full MAE")
 
 ggsave(file=paste("fullMAE supmat.pdf",sep=""), plot=supmatfullMAE, height = 9, width = 9)
 ggsave(file=paste("fullMAE supmat.svg",sep=""), plot=supmatfullMAE, height = 9, width = 9)
@@ -475,15 +1413,19 @@ supmatpartialMAE <- ggplot(data = partialMAE, aes(x = Missing, y = Mean, color =
                 labs(x = "Missing",
                      colour = "Imputation") +
                 theme_bw() + 
-                  theme(axis.title.y = element_blank(),
-                        legend.position = "bottom",
+                  theme(
+                        legend.position = "none",
+                        strip.placement = "outside",
+                        strip.text = element_text( size = 12),
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
-                        axis.title.x = element_blank(),
                         panel.spacing = unit(0, "lines")) +
-   facet_grid(sampleSize~missType, scales = "free_y") +
+   facet_grid(sampleSize~missType, 
+              scales = "free_y") +
   scm +
-  sfm
+  sfm + 
+  xlab("Missing %") +
+  ylab("Partial MAE")
 
 ggsave(file=paste("partialMAE supmat.pdf",sep=""), plot=supmatpartialMAE, height = 9, width = 9)
 ggsave(file=paste("partialMAE supmat.svg",sep=""), plot=supmatpartialMAE, height = 9, width = 9)
@@ -491,10 +1433,15 @@ ggsave(file=paste("partialMAE supmat.svg",sep=""), plot=supmatpartialMAE, height
 ```
 ##bias 1
 ```{r}
+
+ExternalData500$metric[ExternalData500$metric == "imputedBias.1"] <- "Total Protein vs Albumin Bias"
+ExternalData500$metric[ExternalData500$metric == "imputedBias.2"] <- "AST vs ALT Bias"
+ExternalData50$metric[ExternalData50$metric == "imputedBias.1"] <- "Total Protein vs Albumin Bias"
+ExternalData50$metric[ExternalData50$metric == "imputedBias.2"] <- "AST vs ALT Bias"
 ############################################################################# imputedBias.1
-idx <- ExternalData2769[which(ExternalData2769$metric == "imputedBias.1"),]
-idy <- ExternalData500[which(ExternalData500$metric == "imputedBias.1"),]
-idz <- ExternalData50[which(ExternalData50$metric == "imputedBias.1"),]
+idx <- ExternalData2769[which(ExternalData2769$metric == "Total Protein vs Albumin Bias"),]
+idy <- ExternalData500[which(ExternalData500$metric == "Total Protein vs Albumin Bias"),]
+idz <- ExternalData50[which(ExternalData50$metric == "Total Protein vs Albumin Bias"),]
 
 imputedBias.1 <- rbind(idx, idy,idz)
 
@@ -512,36 +1459,31 @@ supmatimputedBias.1 <- ggplot(data = imputedBias.1, aes(x = Missing, y = Mean, c
                 labs(x = "Missing",
                      colour = "Imputation") +
                 theme_bw() + 
-                  theme(axis.title.y = element_blank(),
-                        legend.position = "bottom",
+                  theme(
+                        legend.position = "none",
+                        strip.text = element_text( size = 12),
+                        strip.placement = "outside",
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
-                        axis.title.x = element_blank(),
                         panel.spacing = unit(0, "lines")) +
-   facet_grid(sampleSize~missType, scales = "free_y") +
+   facet_grid(sampleSize~missType, 
+              scales = "free_y") +
   scm +
-  sfm
-
-leg <- get_legend(supmatimputedBias.1)
-
-# Convert to a ggplot and print
-externalLegend <- as_ggplot(leg)
-
-supmatimputedBias.1 <- supmatimputedBias.1 + theme(legend.position = "none")    
+  sfm + 
+  xlab("Missing %")  +
+  ylab("Total Protein vs Albumin Bias")
 
 ggsave(file=paste("imputedBias.1 supmat.pdf",sep=""), plot=supmatimputedBias.1, height = 9, width = 9)
 ggsave(file=paste("imputedBias.1 supmat.svg",sep=""), plot=supmatimputedBias.1, height = 9, width = 9)
-ggsave(file=paste("ExternalLegend.pdf",sep=""), plot=externalLegend, width = 9)
-ggsave(file=paste("ExternalLegend.svg",sep=""), plot=externalLegend, width = 9)
 
 ```
 ##bias 2
 ```{r}
 ############################################################################# imputedBias.2
 
-idx <- ExternalData2769[which(ExternalData2769$metric == "imputedBias.2"),]
-idy <- ExternalData500[which(ExternalData500$metric == "imputedBias.2"),]
-idz <- ExternalData50[which(ExternalData50$metric == "imputedBias.2"),]
+idx <- ExternalData2769[which(ExternalData2769$metric == "AST vs ALT Bias"),]
+idy <- ExternalData500[which(ExternalData500$metric == "AST vs ALT Bias"),]
+idz <- ExternalData50[which(ExternalData50$metric == "AST vs ALT Bias"),]
 
 imputedBias.2 <- rbind(idx, idy, idz)
 
@@ -559,18 +1501,456 @@ supmatimputedBias.2 <- ggplot(data = imputedBias.2, aes(x = Missing, y = Mean, c
                 labs(x = "Missing",
                      colour = "Imputation") +
                 theme_bw() + 
-                  theme(axis.title.y = element_blank(),
+                  theme(
                         legend.position = "none",
+                        strip.text = element_text( size = 12),
+                        strip.placement = "outside",
                         strip.background = element_rect(fill = "white", 
                                                         color = "white"),
-                        axis.title.x = element_blank(),
                         panel.spacing = unit(0, "lines")) +
-   facet_grid(sampleSize~missType, scales = "free_y") +
+   facet_grid(sampleSize~missType, 
+              scales = "free_y") +
   scm +
-  sfm
+  sfm + 
+  xlab("Missing %") +
+  ylab("AST vs ALT Bias")
 
 ggsave(file=paste("imputedBias.2 supmat.pdf",sep=""), plot=supmatimputedBias.2, height = 9, width = 9)
 ggsave(file=paste("imputedBias.2 supmat.svg",sep=""), plot=supmatimputedBias.2, height = 9, width = 9)
+
+```
+
+#HalfViolin
+```{r}
+
+
+df<-as.data.frame(cbind(SCdf[,"S_Creatinine"],
+                        unlist(CALIBER_MAR[["FULL"]][["FULLimputed 5 %"]][["S_Creatinine"]]),
+                          unlist(ncMICErf_MAR[["FULL"]][["FULLimputed 5 %"]][["S_Creatinine"]]),
+                          unlist(MICErf_MAR[["FULL"]][["FULLimputed 5 %"]][["S_Creatinine"]]),
+                          unlist(ncmissForest_MAR[["FULL"]][["FULLimputed 5 %"]][["S_Creatinine"]]),
+                          unlist(missForest_MAR[["FULL"]][["FULLimputed 5 %"]][["S_Creatinine"]])))
+
+cn<- c("ncCALIBERrfimpute","ncMICErf","ncmissForest", "MICErf", "missForest")
+colnames(df) <-cn
+
+df<-melt(df)
+
+colnames(df)[1] = "Imputation"
+df$Missing<- 5
+
+library(tidyverse)
+library(ggdist)
+ 
+ggplot(df, aes(x= Imputation, y = value, fill = Imputation)) +
+  geom_violinhalf(show.legend = FALSE, trim = T) +
+  geom_boxplot(width = .2, alpha = .6, fatten = NULL, show.legend = FALSE) +
+  coord_flip() +
+  theme()+
+  scale_color_manual(values = c("beta" = "black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))
+
+```
+
+```{r}
+
+devtools::install_github("psyteachr/introdataviz")
+
+unit_val<-data.frame(U_Total_volume_collected = "Urine Total Volume Collected (ml)",
+                     U_Osmolality  = "Urine Osmolarity(mOsm/l)",
+                     U_pH = "Urine pH (pH)",
+                     U_Protein = "log Urine Protein (g/L)",
+                     U_Glucose = "log Urine Glucose (mmol/L)",
+                     S_Creatinine = "log Serum Creatinine (mmol/L)",
+                     S_Urea_nitrogen = "log Serum Urea Nitrogen(mmol/L)",
+                     S_ALT = "log Serum ALT (IU/L)",
+                     S_AST = "log Serum AST(IU/L)",
+                     S_Glucose = "Serum Glucose (mmol/L)",
+                     S_Sodium = "Serum Sodium (mmol/L)",
+                     S_Potassium = "Serum Potassium (mmol/L)",
+                     S_Calcium = "Serum Calcium (mmol/L)",
+                     S_Phosphorus = "Serum Phosphorus(mmol/L)",
+                     S_Albumin = "Serum Albumin (g/L)",
+                     S_Total_protein = "Serum Total Protein (g/L)")
+do_log<-c("U_Protein","U_Glucose","S_Creatinine","S_Urea_nitrogen","S_ALT","S_AST") # better think of other way
+
+```
+
+
+A) MAR
+```{r,fig.width=8,fig.height=8}
+
+selected_col_names<-c("S_Total_protein","S_Albumin","S_ALT","S_AST")
+# selected_method<-c("MAR","MNAR","MCAR")
+# MNAR
+P<-list()
+for(i in selected_col_names){
+  y_lab<-unit_val[1,which(colnames(unit_val)==i)]
+  tdf<-data.frame(Original = SCdf[[i]],
+                Cali_5 = CALIBER_MAR$FULL[[grep("5 %",names(CALIBER_MAR$FULL))]][[i]],
+                Cali_40 = CALIBER_MAR$FULL[[grep("40 %",names(CALIBER_MAR$FULL))]][[i]],
+                ncMissF_5 = ncmissForest_MAR$FULL[[grep("5 %",names(ncmissForest_MAR$FULL))]][[i]],
+                ncMissF_40 = ncmissForest_MAR$FULL[[grep("40 %",names(ncmissForest_MAR$FULL))]][[i]],
+                ncMICE_5 = ncMICErf_MAR$FULL[[grep("5 %",names(ncMICErf_MAR$FULL))]][[i]],
+                ncMICE_40 = ncMICErf_MAR$FULL[[grep("40 %",names(ncMICErf_MAR$FULL))]][[i]],
+                MissF_5 = missForest_MAR$FULL[[grep("5 %",names(missForest_MAR$FULL))]][[i]],
+                MissF_40 = missForest_MAR$FULL[[grep("40 %",names(missForest_MAR$FULL))]][[i]],
+                MICE_5 = MICErf_MAR$FULL[[grep("5 %",names(MICErf_MAR$FULL))]][[i]],
+                MICE_40 = MICErf_MAR$FULL[[grep("40 %",names(MICErf_MAR$FULL))]][[i]]
+                )%>%
+  pivot_longer(cols = Original:MICE_40,names_to = "Method")%>%
+  mutate(value = as.numeric(value),
+         `Imputed %` = as.numeric(sapply(strsplit(Method,"_"),"[",2)),
+         Method = factor(sapply(strsplit(Method,"_"),"[",1),
+                         levels = c("Original","Cali","ncMissF","ncMICE", "MissF","MICE")))%>%
+  relocate(`Imputed %`,.after = Method)%>%
+  mutate(`Imputed %` = ifelse(is.na(`Imputed %`),100,`Imputed %`))
+  
+  if(length(grep(i,do_log))==1){
+    tdf$value<-log(tdf$value)
+  }
+  
+  
+  ggplot(tdf,aes(x = Method, y = value, fill = Method, alpha = factor(`Imputed %`)))+
+  introdataviz::geom_split_violin()+
+  geom_boxplot(width = .2,outlier.size = -1)+
+      stat_summary(fun.data = "mean_se",
+               geom = "point",
+               size = 1,
+               position = position_dodge(0.2))+
+    scale_x_discrete(
+                   labels = c("Original",
+                              "Caliber",
+                              "ncMissForrest",
+                              "ncMICE",
+                              "MissForrest",
+                              "MICE"))+
+    scale_alpha_manual(name = "Imputed %",values = c(0.3,0.6,1.0))+
+    scale_color_manual(values = c("Original"="black",
+                                      "Caliber" = "#F8766D",
+                                      "ncMICE"="#A3A500",
+                                      "ncMissForrest"="#00BF7D",
+                                      "MICE" = "#00B0F6",
+                                      "MissForrest"="#E76BF3" ))+
+    labs(subtitle = y_lab,
+         y = "",
+         x = "")+
+    theme_minimal()+
+    theme(legend.position = "bottom")->p1
+  P[[i]]<-p1
+  rm(tdf,p1,y_lab)
+
+  
+}
+
+p_legend<-get_legend(P[[1]])
+
+MAR_violin<- grid.arrange(P[[1]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[2]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[3]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[4]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             p_legend,
+             top = "A) MAR",
+             heights = c(0.475,0.475,0.05),
+  layout_matrix = rbind(c(1, 2),
+                        c(3, 4),
+                        c(5, 5)))
+
+ggsave(file=paste("MAR Violin",nrow(SCdf)," Samples.svg",sep=""), plot=MAR_violin, width = 10, height = 7)
+ggsave(file=paste("MAR Violin",nrow(SCdf)," Samples.pdf",sep=""), plot=MAR_violin, width = 10, height = 7)
+
+```
+
+
+B) MNAR
+```{r,fig.width=8,fig.height=8}
+
+selected_col_names<-c("S_Total_protein","S_Albumin","S_ALT","S_AST")
+selected_method<-c("MAR","MNAR","MCAR")
+# MNAR
+P<-list()
+for(i in selected_col_names){
+  y_lab<-unit_val[1,which(colnames(unit_val)==i)]
+  tdf<-data.frame(Original = SCdf[[i]],
+                Cali_5 = CALIBER_MNAR$FULL[[grep("5 %",names(CALIBER_MNAR$FULL))]][[i]],
+                Cali_40 = CALIBER_MNAR$FULL[[grep("40 %",names(CALIBER_MNAR$FULL))]][[i]],
+                ncMissF_5 = ncmissForest_MNAR$FULL[[grep("5 %",names(ncmissForest_MNAR$FULL))]][[i]],
+                ncMissF_40 = ncmissForest_MNAR$FULL[[grep("40 %",names(ncmissForest_MNAR$FULL))]][[i]],
+                ncMICE_5 = ncMICErf_MNAR$FULL[[grep("5 %",names(ncMICErf_MNAR$FULL))]][[i]],
+                ncMICE_40 = ncMICErf_MNAR$FULL[[grep("40 %",names(ncMICErf_MNAR$FULL))]][[i]],
+                MissF_5 = missForest_MNAR$FULL[[grep("5 %",names(missForest_MNAR$FULL))]][[i]],
+                MissF_40 = missForest_MNAR$FULL[[grep("40 %",names(missForest_MNAR$FULL))]][[i]],
+                MICE_5 = MICErf_MNAR$FULL[[grep("5 %",names(MICErf_MNAR$FULL))]][[i]],
+                MICE_40 = MICErf_MNAR$FULL[[grep("40 %",names(MICErf_MNAR$FULL))]][[i]]
+                )%>%
+  pivot_longer(cols = Original:MICE_40, names_to = "Method") %>%
+  mutate(value = as.numeric(value),
+         `Imputed %` = as.numeric(sapply(strsplit(Method,"_"),"[",2)),
+         Method = factor(sapply(strsplit(Method,"_"),"[",1),
+                         levels = c("Original","Cali","ncMissF","ncMICE", "MissF","MICE")))%>%
+  relocate(`Imputed %`,.after = Method)%>%
+  mutate(`Imputed %` = ifelse(is.na(`Imputed %`),100,`Imputed %`))
+  
+  if(length(grep(i,do_log))==1){
+    tdf$value<-log(tdf$value)
+  }
+  
+  
+  ggplot(tdf,aes(x = Method, y = value, fill = Method, alpha = factor(`Imputed %`)))+
+  introdataviz::geom_split_violin()+
+  geom_boxplot(width = .2,outlier.size = -1)+
+      stat_summary(fun.data = "mean_se",
+               geom = "point",
+               size = 1,
+               position = position_dodge(0.2))+
+    scale_x_discrete(
+                   labels = c("Original",
+                              "Caliber",
+                              "ncMissForrest",
+                              "ncMICE",
+                              "MissForrest",
+                              "MICE"))+
+    scale_alpha_manual(name = "Imputed %",values = c(0.3,0.6,1.0))+
+    scale_color_manual(values = c("Original"="black",
+                                      "Caliber" = "#F8766D",
+                                      "ncMICE"="#A3A500",
+                                      "ncMissForrest"="#00BF7D",
+                                      "MICE" = "#00B0F6",
+                                      "MissForrest"="#E76BF3" ))+
+    labs(subtitle = y_lab,
+         y = "",
+         x = "")+
+    theme_minimal()+
+    theme(legend.position = "bottom")->p1
+  P[[i]]<-p1
+  rm(tdf,p1,y_lab)
+
+  
+}
+
+p_legend<-get_legend(P[[1]])
+# svglite::svglite(filename = "~/OneDrive - Murdoch University/DataStudetns/Janonna/MethodPaper/HalfViolin/MNAR.svg",width = 8,height = 8)
+MNAR_violin<-grid.arrange(P[[1]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[2]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[3]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[4]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             p_legend,
+             top = "B) MNAR",
+             heights = c(0.475,0.475,0.05),
+  layout_matrix = rbind(c(1, 2),
+                        c(3, 4),
+                        c(5, 5)))
+
+# dev.off()
+
+ggsave(file=paste("MNAR Violin",nrow(SCdf)," Samples.svg",sep=""), plot=MNAR_violin, width = 10, height = 7)
+ggsave(file=paste("MNAR Violin",nrow(SCdf)," Samples.pdf",sep=""), plot=MNAR_violin, width = 10, height = 7)
+
+```
+
+C) MCAR
+```{r,fig.width=8,fig.height=8}
+
+selected_col_names<-c("S_Total_protein","S_Albumin","S_ALT","S_AST")
+selected_method<-c("MAR","MNAR","MCAR")
+# MNAR
+P<-list()
+for(i in selected_col_names){
+  y_lab<-unit_val[1,which(colnames(unit_val)==i)]
+  tdf<-data.frame(Original = SCdf[[i]],
+                Cali_5 = CALIBER_MCAR$FULL[[grep("5 %",names(CALIBER_MCAR$FULL))]][[i]],
+                Cali_40 = CALIBER_MCAR$FULL[[grep("40 %",names(CALIBER_MCAR$FULL))]][[i]],
+                ncMissF_5 = ncmissForest_MCAR$FULL[[grep("5 %",names(ncmissForest_MCAR$FULL))]][[i]],
+                ncMissF_40 = ncmissForest_MCAR$FULL[[grep("40 %",names(ncmissForest_MCAR$FULL))]][[i]],
+                ncMICE_5 = ncMICErf_MCAR$FULL[[grep("5 %",names(ncMICErf_MCAR$FULL))]][[i]],
+                ncMICE_40 = ncMICErf_MCAR$FULL[[grep("40 %",names(ncMICErf_MCAR$FULL))]][[i]],
+                MissF_5 = missForest_MCAR$FULL[[grep("5 %",names(missForest_MCAR$FULL))]][[i]],
+                MissF_40 = missForest_MCAR$FULL[[grep("40 %",names(missForest_MCAR$FULL))]][[i]],
+                MICE_5 = MICErf_MCAR$FULL[[grep("5 %",names(MICErf_MCAR$FULL))]][[i]],
+                MICE_40 = MICErf_MCAR$FULL[[grep("40 %",names(MICErf_MCAR$FULL))]][[i]]
+                )%>%
+  pivot_longer(cols = Original:MICE_40,names_to = "Method")%>%
+  mutate(value = as.numeric(value),
+         `Imputed %` = as.numeric(sapply(strsplit(Method,"_"),"[",2)),
+         Method = factor(sapply(strsplit(Method,"_"),"[",1),
+                         levels = c("Original","Cali","ncMissF","ncMICE", "MissF","MICE")))%>%
+  relocate(`Imputed %`,.after = Method)%>%
+  mutate(`Imputed %` = ifelse(is.na(`Imputed %`),100,`Imputed %`))
+  
+  if(length(grep(i,do_log))==1){
+    tdf$value<-log(tdf$value)
+  }
+  
+  
+  ggplot(tdf,aes(x = Method, y = value, fill = Method, alpha = factor(`Imputed %`)))+
+  introdataviz::geom_split_violin()+
+  geom_boxplot(width = .2,outlier.size = -1)+
+      stat_summary(fun.data = "mean_se",
+               geom = "point",
+               size = 1,
+               position = position_dodge(0.2))+
+    scale_x_discrete(
+                   labels = c("Original",
+                              "Caliber",
+                              "ncMissForrest",
+                              "ncMICE",
+                              "MissForrest",
+                              "MICE"))+
+    scale_alpha_manual(name = "Imputed %",values = c(0.3,0.6,1.0))+
+    scale_color_manual(values = c("Original"="black",
+                                      "Caliber" = "#F8766D",
+                                      "ncMICE"="#A3A500",
+                                      "ncMissForrest"="#00BF7D",
+                                      "MICE" = "#00B0F6",
+                                      "MissForrest"="#E76BF3" ))+
+    labs(subtitle = y_lab,
+         y = "",
+         x = "")+
+    theme_minimal()+
+    theme(legend.position = "bottom")->p1
+  P[[i]]<-p1
+  rm(tdf,p1,y_lab)
+
+  
+}
+
+p_legend<-get_legend(P[[1]])
+
+MCAR_violin<- grid.arrange(P[[1]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[2]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[3]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             P[[4]]+theme(legend.position = "n", 
+                          axis.text.x = element_blank()),
+             p_legend,
+             top = "C) MCAR",
+             heights = c(0.475,0.475,0.05),
+  layout_matrix = rbind(c(1, 2),
+                        c(3, 4),
+                        c(5, 5)))
+
+
+ggsave(file=paste("MCAR Violin",nrow(SCdf)," Samples.svg",sep=""), plot=MCAR_violin, width = 10, height = 7)
+ggsave(file=paste("MCAR Violin",nrow(SCdf)," Samples.pdf",sep=""), plot=MCAR_violin, width = 10, height = 7)
+
+```
+
+
+
+#External check
+```{r}
+#find relationship to test bias. Serum Albumin and Total Protein have a strong relationship. 
+#df2 <- df[rowSums(is.na(df[,15:30])) > 0, ]  
+firstcol = which(colnames(SCdf)=="S_Creatinine")
+lastcol = which(colnames(SCdf)=="S_Total_protein")
+
+pairs(SCdf[c(firstcol:lastcol)])
+
+ggplot(data = SCdf, aes(x = S_Total_protein, y = S_Albumin)) +
+  geom_point() +
+   geom_smooth(method = lm,
+               level = 0.95) +
+  stat_poly_eq(data=SCdf, aes(x=S_Total_protein, y = S_Albumin)) +
+  theme_bw() +
+  labs(title = "Serum Albumin and Total Protein", subtitle = "Original 2769 samples") +
+  xlab("Total Protein (g/L)") +
+  ylab("Albumin (g/L)")
+  
+
+ggplot(data = SCdf, aes(x = S_ALT, y = S_AST)) +
+  geom_point() +
+ geom_smooth(method = lm,
+               level = 0.95) +
+  stat_poly_eq(data=SCdf, aes(x=S_ALT, y = S_AST))+
+  theme_bw() +
+  labs(title = "AST and ALT", subtitle = "Original 2769 samples") +
+  xlab("AST (IU/L)") +
+  ylab("ALT (IU/L)")
+
+
+ggpubr::stat_cor(method = "pearson",
+                   hjust = 0,
+                   vjust = 0) 
+
+
+x <- 1:100
+y <- (x + x^2 + x^3) + rnorm(length(x), mean = 0, sd = mean(x^3) / 4)
+my.data <- data.frame(x, y, group = c("A", "B"),
+                      y2 = y * c(0.5,2), block = c("a", "a", "b", "b"))
+
+
+my.data.Albumin <- cbind(SCdf$S_Albumin,
+                         CALIBER_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Albumin"]],
+                         MICErf_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Albumin"]], 
+                         ncMICErf_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Albumin"]], 
+                         missForest_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Albumin"]],
+                         ncmissForest_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Albumin"]])
+
+my.data.TotalProtein <- cbind(SCdf$S_Total_protein,
+                         CALIBER_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Total_protein"]],
+                         MICErf_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Total_protein"]],
+                         ncMICErf_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Total_protein"]], 
+                         missForest_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Total_protein"]],
+                         ncmissForest_MAR[["FULL"]][["FULLimputed 40 %"]][["S_Total_protein"]])
+
+cn<- c("Original","ncCALIBERrfimpute","ncMICErf","ncmissForest", "MICErf", "missForest")
+colnames(my.data.TotalProtein) <-cn
+colnames(my.data.Albumin) <-cn
+
+my.data.TotalProtein <-melt(my.data.TotalProtein)
+
+my.data.Albumin<-melt(my.data.Albumin)
+
+colnames(my.data.TotalProtein)[2] = "Imputation"
+colnames(my.data.Albumin)[2] = "Imputation"
+
+colnames(my.data.TotalProtein)[3] = "TotalProtein"
+colnames(my.data.Albumin)[3] = "Albumin"
+
+my.data<- cbind(my.data.TotalProtein, my.data.Albumin[,"Albumin"])
+colnames(my.data)[4] = "Albumin"
+
+
+# Fit polynomial regression line and add labels
+formula <- y ~ x
+plot <- ggplot(my.data, aes(x=Albumin, y=TotalProtein, color = Imputation)) +
+  geom_point(alpha =0.4) +
+  stat_smooth(aes(fill = Imputation, color = Imputation), method = "lm", formula = formula) +
+  stat_regline_equation(
+    aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+    formula = formula
+  ) +
+  theme_bw() +
+  scale_fill_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  scale_color_manual(values = c("Original"="black",
+                                      "ncCALIBERrfimpute" = "#F8766D",
+                                      "ncMICErf"="#A3A500",
+                                      "ncmissForest"="#00BF7D",
+                                      "MICErf" = "#00B0F6",
+                                      "missForest"="#E76BF3" ))+
+  ggtitle("MAR Albumin and Total Protein")
+
+
+ggpar(p, palette = "jco")
 
 ```
 
